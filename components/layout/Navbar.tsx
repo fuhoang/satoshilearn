@@ -32,7 +32,7 @@ export function Navbar() {
   const navLinks = isHomePage ? homeNavLinks : appNavLinks;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-white/10 bg-black/90 text-white backdrop-blur">
+    <header className="sticky top-0 z-0 border-b border-white/10 bg-black/90 text-white backdrop-blur">
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-4 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center">
         <div className="flex items-center justify-between md:hidden">
           <Link

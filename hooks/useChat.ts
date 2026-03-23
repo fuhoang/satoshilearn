@@ -1,21 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import type { ChatMessage } from "@/types/chat";
 
-export function useChat() {
+const welcomeMessage: ChatMessage = {
+  id: "welcome",
+  role: "assistant",
+  content:
+    "Ask anything about Bitcoin and I will explain it with simple language and concrete examples.",
+};
+
+export function useChat(initialMessages: ChatMessage[] = [welcomeMessage]) {
   const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content:
-        "Ask anything about Bitcoin and I will explain it with simple language and concrete examples.",
-    },
+    ...initialMessages,
   ]);
   const [isLoading, setIsLoading] = useState(false);
 
-  async function sendMessage(content: string) {
+  const sendMessage = useCallback(async (content: string) => {
     if (!content.trim()) {
       return;
     }
@@ -51,7 +53,7 @@ export function useChat() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
 
   return { messages, isLoading, sendMessage };
 }
