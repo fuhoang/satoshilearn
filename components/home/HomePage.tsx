@@ -148,8 +148,8 @@ export default function HomePage() {
 
       <section id="curriculum" className="border-t border-white/10">
         <div className="mx-auto max-w-6xl px-6 py-20">
-          <div className="max-w-2xl">
-            <p className="text-sm text-zinc-500">Curriculum preview</p>
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-sm text-zinc-500">Curriculum</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
               A clearer path into Bitcoin.
             </h2>
@@ -179,34 +179,55 @@ export default function HomePage() {
       </section>
 
       <section id="pricing" className="border-t border-white/10">
-        <div className="mx-auto grid max-w-6xl gap-10 px-6 py-20 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
-          <div>
+        <div className="mx-auto max-w-6xl px-6 py-20">
+          <div className="mx-auto max-w-3xl text-center">
             <p className="text-sm text-zinc-500">Why it matters</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
               Built for beginners who want clarity and safe guidance.
             </h2>
-            <p className="mt-4 max-w-2xl text-base leading-8 text-zinc-400">
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-8 text-zinc-400">
               Most people do not need more noise. They need a trusted place to
               learn Bitcoin step by step, ask smart questions, and avoid common
               mistakes.
             </p>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-            <p className="text-sm text-zinc-500">Pro plan</p>
-            <p className="mt-3 text-4xl font-semibold text-white">
-              GBP12
-              <span className="text-base font-normal text-zinc-400">
-                /month
-              </span>
-            </p>
-            <p className="mt-4 text-sm leading-7 text-zinc-400">
-              Full curriculum, more AI usage, quizzes, progress tracking, and
-              deeper security lessons.
-            </p>
-            <button className="mt-6 w-full rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-black transition hover:bg-orange-400">
-              Join the waitlist
-            </button>
+          <div className="mx-auto mt-10 grid max-w-4xl gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+              <p className="text-sm text-zinc-500">Monthly plan</p>
+              <p className="mt-3 text-4xl font-semibold text-white">
+                GBP12
+                <span className="text-base font-normal text-zinc-400">
+                  /month
+                </span>
+              </p>
+              <p className="mt-4 text-sm leading-7 text-zinc-400">
+                Full curriculum, more AI usage, quizzes, progress tracking, and
+                deeper security lessons.
+              </p>
+              <button className="mt-6 w-full rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-black transition hover:bg-orange-400">
+                Buy Now
+              </button>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+              <p className="text-sm text-zinc-500">Yearly plan</p>
+              <p className="mt-3 text-4xl font-semibold text-white">
+                GBP120
+                <span className="text-base font-normal text-zinc-400">
+                  /year
+                </span>
+              </p>
+              <p className="mt-4 text-sm leading-7 text-zinc-400">
+                Full curriculum, more AI usage, quizzes, progress tracking, and
+                deeper security lessons with a fixed annual price.
+              </p>
+              <button className="mt-6 w-full rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-black transition hover:bg-orange-400">
+                Buy Now
+              </button>
+              <p className="mt-3 text-center text-xs text-zinc-500">
+                Save compared with the monthly plan.
+              </p>
+            </div>
           </div>
         </div>
       </section>
