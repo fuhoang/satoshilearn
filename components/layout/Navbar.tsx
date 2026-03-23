@@ -3,32 +3,21 @@
 import { useState } from "react";
 import type { Route } from "next";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/Button";
 
 type NavLink = {
-  href: Route | "/#curriculum" | "/#demo" | "/#pricing";
+  href: Route | "/#demo" | "/#pricing";
   label: string;
 };
 
-const HOME_NAV_LINKS = [
-  { href: "/#curriculum", label: "Curriculum" },
-  { href: "/#demo", label: "Demo" },
+const NAV_LINKS = [
+  { href: "/learn", label: "Curriculum" },
   { href: "/#pricing", label: "Pricing" },
 ] satisfies NavLink[];
 
-const APP_NAV_LINKS = [
-  { href: "/pricing", label: "Pricing" },
-  { href: "/learn", label: "Curriculum" },
-  { href: "/dashboard", label: "Dashboard" },
-] satisfies NavLink[];
-
 export function Navbar() {
-  const pathname = usePathname();
-  const isHomePage = pathname === "/";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const navLinks = isHomePage ? HOME_NAV_LINKS : APP_NAV_LINKS;
 
   return (
     <header className="sticky top-0 z-30 border-b border-white/10 bg-black/90 text-white backdrop-blur">
@@ -76,7 +65,7 @@ export function Navbar() {
         </div>
 
         <nav className="hidden items-center gap-6 justify-self-start text-sm text-zinc-400 md:flex">
-          {navLinks.map((link) => (
+          {NAV_LINKS.map((link) => (
             <Link key={link.href} href={link.href}>
               {link.label}
             </Link>
@@ -97,10 +86,7 @@ export function Navbar() {
           </span>
         </Link>
         <div className="hidden items-center justify-center gap-3 md:flex md:justify-self-end">
-          <Link href="/auth/login" className="text-sm font-medium text-zinc-300">
-            Log in
-          </Link>
-          <Link href="/auth/register">
+          <Link href="/learn">
             <Button className="bg-orange-500 !text-white hover:bg-orange-400 hover:!text-white">
               Start Learning
             </Button>
@@ -113,7 +99,7 @@ export function Navbar() {
             className="rounded-3xl border border-white/10 bg-white/5 p-4 md:hidden"
           >
             <nav className="flex flex-col gap-3 text-sm text-zinc-300">
-              {navLinks.map((link) => (
+              {NAV_LINKS.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
@@ -124,14 +110,7 @@ export function Navbar() {
               ))}
             </nav>
             <div className="mt-4 flex flex-col gap-3 border-t border-white/10 pt-4">
-              <Link
-                href="/auth/login"
-                className="text-sm font-medium text-zinc-300"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Log in
-              </Link>
-              <Link href="/auth/register" onClick={() => setIsMenuOpen(false)}>
+              <Link href="/learn" onClick={() => setIsMenuOpen(false)}>
                 <Button className="w-full px-3 py-1.5 text-[11px] bg-orange-500 !text-white hover:bg-orange-400 hover:!text-white">
                   Start Learning
                 </Button>

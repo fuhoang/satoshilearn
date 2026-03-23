@@ -30,7 +30,7 @@ export default function PricingPage() {
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">{plan.name}</p>
             <h2 className="mt-4 text-5xl font-black">{plan.price}</h2>
             <p className="mt-4 text-sm leading-7 text-[var(--muted)]">{plan.description}</p>
-            <Link href="/auth/register" className="mt-8 inline-flex text-sm font-semibold text-[var(--accent-strong)]">
+            <Link href="/learn" className="mt-8 inline-flex text-sm font-semibold text-[var(--accent-strong)]">
               Choose {plan.name}
             </Link>
           </Card>
