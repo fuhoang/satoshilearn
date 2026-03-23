@@ -53,7 +53,7 @@ describe("HomePage", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Start free" })).toHaveAttribute(
       "href",
-      "/auth/register",
+      "/learn",
     );
     expect(
       screen.getByRole("link", { name: "View curriculum" }),

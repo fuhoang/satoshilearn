@@ -13,7 +13,7 @@ export function Sidebar({ activeSlug }: { activeSlug?: string }) {
         {lessonConfig.map((lesson) => (
           <Link
             key={lesson.slug}
-            href={`/lesson/${lesson.slug}`}
+            href={`/learn/${lesson.slug}`}
             className={cn(
               "block rounded-2xl px-4 py-3 transition-colors",
               activeSlug === lesson.slug
