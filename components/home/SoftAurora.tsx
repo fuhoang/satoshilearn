@@ -10,8 +10,8 @@ export function SoftAurora() {
         speed={0.55}
         scale={1.4}
         brightness={0.95}
-        color1="#f8fafc"
-        color2="#f59e0b"
+        color1="#ffffff"
+        color2="#f97316"
         noiseFrequency={2.2}
         noiseAmplitude={0.9}
         bandHeight={0.2}
