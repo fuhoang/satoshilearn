@@ -126,7 +126,7 @@ export default function HomePage() {
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:justify-center">
               <Link
-                href="/auth/register"
+                href="/learn"
                 className="rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-black transition hover:bg-orange-400"
               >
                 Start free

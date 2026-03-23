@@ -8,7 +8,7 @@ import { QuizCard } from "@/components/quiz/QuizCard";
 import { QuizResult } from "@/components/quiz/QuizResult";
 import { getAdjacentLessons, getLessonBySlug } from "@/lib/lessons";
 
-export default async function LessonPage({
+export default async function LearnLessonPage({
   params,
 }: {
   params: Promise<{ slug: string }>;

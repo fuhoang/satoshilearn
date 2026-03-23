@@ -32,7 +32,7 @@ export default function DashboardPage() {
             {lessonConfig.map((lesson) => (
               <Link
                 key={lesson.slug}
-                href={`/lesson/${lesson.slug}`}
+                href={`/learn/${lesson.slug}`}
                 className="block rounded-2xl border border-black/8 bg-white/75 px-4 py-4 transition-colors hover:bg-amber-50"
               >
                 <div className="flex items-center justify-between gap-4">
