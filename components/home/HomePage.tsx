@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import { SoftAurora } from "@/components/home/SoftAurora";
+import { Button } from "@/components/ui/Button";
 
 export default function HomePage() {
   const [prompt, setPrompt] = useState("");
@@ -17,14 +18,26 @@ export default function HomePage() {
     {
       title: "Bitcoin Basics",
       description: "Understand what Bitcoin is, why it exists, and why it matters.",
+      eyebrow: "Start here",
+      accent: "from-amber-400/25 via-orange-500/10 to-transparent",
+      border: "border-amber-400/25",
+      button: "Explore basics",
     },
     {
       title: "Wallets & Security",
       description: "Learn self-custody, scams, and safe first steps.",
+      eyebrow: "Stay safe",
+      accent: "from-emerald-400/25 via-cyan-500/10 to-transparent",
+      border: "border-emerald-400/25",
+      button: "Learn security",
     },
     {
       title: "Transactions & Mining",
       description: "Learn how Bitcoin moves and how the network stays secure.",
+      eyebrow: "Go deeper",
+      accent: "from-sky-400/25 via-indigo-500/10 to-transparent",
+      border: "border-sky-400/25",
+      button: "See the network",
     },
   ];
 
@@ -148,8 +161,8 @@ export default function HomePage() {
 
       <section id="curriculum" className="border-t border-white/10">
         <div className="mx-auto max-w-6xl px-6 py-20">
-          <div className="max-w-2xl">
-            <p className="text-sm text-zinc-500">Curriculum preview</p>
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-sm text-zinc-500">Curriculum</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
               A clearer path into Bitcoin.
             </h2>
@@ -163,15 +176,30 @@ export default function HomePage() {
             {modules.map((module, index) => (
               <div
                 key={module.title}
-                className="rounded-2xl border border-white/10 p-6"
+                className={`group relative flex h-full overflow-hidden rounded-[1.75rem] border bg-black p-6 text-left transition-transform duration-200 hover:-translate-y-1 ${module.border}`}
               >
-                <p className="text-sm text-zinc-500">Module 0{index + 1}</p>
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br ${module.accent} opacity-80 transition-opacity duration-200 group-hover:opacity-100`}
+                />
+                <div className="relative flex h-full flex-1 flex-col">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-zinc-400">Module 0{index + 1}</p>
+                    <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-zinc-300">
+                      {module.eyebrow}
+                    </span>
+                  </div>
                 <h3 className="mt-4 text-xl font-semibold text-white">
                   {module.title}
                 </h3>
                 <p className="mt-3 text-sm leading-7 text-zinc-400">
                   {module.description}
                 </p>
+                  <div className="mt-auto pt-6">
+                    <Button className="w-full rounded-xl bg-orange-500 px-5 py-3 text-black shadow-none hover:bg-orange-400">
+                      {module.button}
+                    </Button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -179,34 +207,55 @@ export default function HomePage() {
       </section>
 
       <section id="pricing" className="border-t border-white/10">
-        <div className="mx-auto grid max-w-6xl gap-10 px-6 py-20 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
-          <div>
+        <div className="mx-auto max-w-6xl px-6 py-20">
+          <div className="mx-auto max-w-3xl text-center">
             <p className="text-sm text-zinc-500">Why it matters</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
               Built for beginners who want clarity and safe guidance.
             </h2>
-            <p className="mt-4 max-w-2xl text-base leading-8 text-zinc-400">
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-8 text-zinc-400">
               Most people do not need more noise. They need a trusted place to
               learn Bitcoin step by step, ask smart questions, and avoid common
               mistakes.
             </p>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-            <p className="text-sm text-zinc-500">Pro plan</p>
-            <p className="mt-3 text-4xl font-semibold text-white">
-              GBP12
-              <span className="text-base font-normal text-zinc-400">
-                /month
-              </span>
-            </p>
-            <p className="mt-4 text-sm leading-7 text-zinc-400">
-              Full curriculum, more AI usage, quizzes, progress tracking, and
-              deeper security lessons.
-            </p>
-            <button className="mt-6 w-full rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-black transition hover:bg-orange-400">
-              Join the waitlist
-            </button>
+          <div className="mx-auto mt-10 grid max-w-4xl gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+              <p className="text-sm text-zinc-500">Monthly plan</p>
+              <p className="mt-3 text-4xl font-semibold text-white">
+                GBP12
+                <span className="text-base font-normal text-zinc-400">
+                  /month
+                </span>
+              </p>
+              <p className="mt-4 text-sm leading-7 text-zinc-400">
+                Full curriculum, more AI usage, quizzes, progress tracking, and
+                deeper security lessons.
+              </p>
+              <button className="mt-6 w-full rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-black transition hover:bg-orange-400">
+                Buy Now
+              </button>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+              <p className="text-sm text-zinc-500">Yearly plan</p>
+              <p className="mt-3 text-4xl font-semibold text-white">
+                GBP120
+                <span className="text-base font-normal text-zinc-400">
+                  /year
+                </span>
+              </p>
+              <p className="mt-4 text-sm leading-7 text-zinc-400">
+                Full curriculum, more AI usage, quizzes, progress tracking, and
+                deeper security lessons with a fixed annual price.
+              </p>
+              <button className="mt-6 w-full rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-black transition hover:bg-orange-400">
+                Buy Now
+              </button>
+              <p className="mt-3 text-center text-xs text-zinc-500">
+                Save compared with the monthly plan.
+              </p>
+            </div>
           </div>
         </div>
       </section>
