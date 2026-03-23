@@ -1,11 +1,11 @@
+"use client";
+
+import { useState } from "react";
+
 import { SoftAurora } from "@/components/home/SoftAurora";
 
 export default function HomePage() {
-  const prompts = [
-    "Explain Bitcoin like I'm a complete beginner",
-    "Why does Bitcoin have value?",
-    "What mistakes should I avoid when starting?",
-  ];
+  const [prompt, setPrompt] = useState("");
 
   const modules = [
     {
@@ -49,22 +49,24 @@ export default function HomePage() {
             id="demo"
             className="relative z-10 mt-12 w-full max-w-2xl rounded-3xl border border-white/10 bg-zinc-900/80 p-5 backdrop-blur"
           >
-            <div className="border-b border-white/10 pb-4">
-              <p className="text-sm font-medium text-white">AI lesson demo</p>
-              <p className="mt-1 text-sm text-zinc-500">
-                Suggested prompts to get started
-              </p>
-            </div>
-
-            <div className="mt-4 space-y-2">
-              {prompts.map((prompt) => (
+            <div className="rounded-[1.75rem] border border-white/10 bg-black/40 p-3 shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
+              <input
+                className="w-full bg-transparent px-2 py-2 text-sm text-white outline-none placeholder:text-zinc-500"
+                placeholder="Ask anything about bitcoin..."
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+              />
+              <div className="mt-3 flex items-center justify-between border-t border-white/10 px-2 pt-3">
+                <p className="text-xs text-zinc-500">
+                  AI prompt
+                </p>
                 <button
-                  key={prompt}
-                  className="w-full rounded-xl border border-white/10 px-4 py-3 text-left text-sm text-zinc-300 transition hover:bg-white/5"
+                  className="rounded-full bg-orange-500 px-3 py-1.5 text-xs font-semibold text-black transition hover:bg-orange-400"
+                  type="button"
                 >
-                  {prompt}
+                  Ask
                 </button>
-              ))}
+              </div>
             </div>
           </div>
         </div>
