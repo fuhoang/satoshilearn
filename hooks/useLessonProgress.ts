@@ -9,43 +9,101 @@ type StoredProgress = {
   completedLessonSlugs: string[];
 };
 
-const EMPTY_PROGRESS: StoredProgress = { completedLessonSlugs: [] };
-let cachedRawProgress = "";
-let cachedProgress: StoredProgress = EMPTY_PROGRESS;
+type ProgressStore = StoredProgress & {
+  loaded: boolean;
+};
 
-function getEmptyProgress(): StoredProgress {
-  return EMPTY_PROGRESS;
+const EMPTY_PROGRESS: ProgressStore = {
+  completedLessonSlugs: [],
+  loaded: false,
+};
+
+let cachedRawProgress = "";
+let cachedProgress: ProgressStore = EMPTY_PROGRESS;
+let hasLoadedRemoteProgress = false;
+
+function normalizeProgress(value: unknown): StoredProgress {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    !Array.isArray((value as StoredProgress).completedLessonSlugs)
+  ) {
+    return { completedLessonSlugs: [] };
+  }
+
+  return {
+    completedLessonSlugs: Array.from(
+      new Set(
+        (value as StoredProgress).completedLessonSlugs.filter(
+          (slug): slug is string => typeof slug === "string" && slug.length > 0,
+        ),
+      ),
+    ),
+  };
 }
 
-function readProgress(): StoredProgress {
+function notifyProgressChange() {
   if (typeof window === "undefined") {
-    return getEmptyProgress();
+    return;
+  }
+
+  window.dispatchEvent(new Event(STORAGE_EVENT));
+}
+
+function writeProgress(progress: StoredProgress, loaded = true) {
+  const nextProgress: ProgressStore = {
+    ...progress,
+    loaded,
+  };
+  const raw = JSON.stringify(progress);
+
+  cachedRawProgress = raw;
+  cachedProgress = nextProgress;
+
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(STORAGE_KEY, raw);
+    notifyProgressChange();
+  }
+}
+
+function readLocalProgress(): ProgressStore {
+  if (typeof window === "undefined") {
+    return EMPTY_PROGRESS;
   }
 
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
 
     if (!raw) {
-      return getEmptyProgress();
+      return cachedProgress;
     }
 
     if (raw === cachedRawProgress) {
       return cachedProgress;
     }
 
-    const parsed = JSON.parse(raw) as StoredProgress;
+    const normalized = normalizeProgress(JSON.parse(raw));
 
     cachedRawProgress = raw;
     cachedProgress = {
-      completedLessonSlugs: Array.isArray(parsed.completedLessonSlugs)
-        ? parsed.completedLessonSlugs
-        : [],
+      ...normalized,
+      loaded: cachedProgress.loaded,
     };
 
     return cachedProgress;
   } catch {
-    return getEmptyProgress();
+    return cachedProgress;
   }
+}
+
+function loadProgressSnapshot(): ProgressStore {
+  const local = readLocalProgress();
+
+  if (local.completedLessonSlugs.length > 0 || local.loaded) {
+    return local;
+  }
+
+  return cachedProgress;
 }
 
 function subscribe(callback: () => void) {
@@ -58,38 +116,70 @@ function subscribe(callback: () => void) {
   window.addEventListener("storage", handleChange);
   window.addEventListener(STORAGE_EVENT, handleChange);
 
+  if (!hasLoadedRemoteProgress) {
+    hasLoadedRemoteProgress = true;
+
+    void fetch("/api/progress", { method: "GET", cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error("Failed to load progress");
+        }
+
+        const payload = normalizeProgress(await response.json());
+        const local = readLocalProgress();
+        const merged = {
+          completedLessonSlugs: Array.from(
+            new Set([...local.completedLessonSlugs, ...payload.completedLessonSlugs]),
+          ),
+        };
+
+        writeProgress(merged, true);
+      })
+      .catch(() => {
+        cachedProgress = {
+          ...readLocalProgress(),
+          loaded: true,
+        };
+        notifyProgressChange();
+      });
+  }
+
   return () => {
     window.removeEventListener("storage", handleChange);
     window.removeEventListener(STORAGE_EVENT, handleChange);
   };
 }
 
-function writeProgress(progress: StoredProgress) {
-  const raw = JSON.stringify(progress);
-
-  cachedRawProgress = raw;
-  cachedProgress = progress;
-  window.localStorage.setItem(STORAGE_KEY, raw);
-  window.dispatchEvent(new Event(STORAGE_EVENT));
+function persistProgress(progress: StoredProgress) {
+  void fetch("/api/progress", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(progress),
+  }).catch(() => undefined);
 }
 
 export function useLessonProgress() {
   const progress = useSyncExternalStore(
     subscribe,
-    readProgress,
-    getEmptyProgress,
+    loadProgressSnapshot,
+    () => EMPTY_PROGRESS,
   );
 
   const markLessonCompleted = useCallback((slug: string) => {
-    const current = readProgress();
+    const current = loadProgressSnapshot();
 
     if (current.completedLessonSlugs.includes(slug)) {
       return;
     }
 
-    writeProgress({
+    const next = {
       completedLessonSlugs: [...current.completedLessonSlugs, slug],
-    });
+    };
+
+    writeProgress(next);
+    persistProgress(next);
   }, []);
 
   const isLessonCompleted = useCallback(
@@ -103,6 +193,7 @@ export function useLessonProgress() {
   );
 
   return {
+    loaded: progress.loaded,
     completedLessonSlugs: progress.completedLessonSlugs,
     completedCount,
     isLessonCompleted,
