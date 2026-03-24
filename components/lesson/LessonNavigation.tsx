@@ -14,24 +14,30 @@ export function LessonNavigation({
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {previous ? (
-        <Link href={`/learn/${previous.slug}`} className="surface rounded-3xl p-5">
-          <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Previous</p>
+        <Link
+          href={`/learn/${previous.slug}`}
+          className="rounded-3xl border border-white/10 bg-white/[0.03] p-5 text-white transition hover:bg-white/[0.05]"
+        >
+          <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Previous</p>
           <p className="mt-2 text-lg font-semibold">{previous.title}</p>
         </Link>
       ) : (
-        <div className="surface rounded-3xl p-5 opacity-60">
-          <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Previous</p>
+        <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5 text-white opacity-60">
+          <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Previous</p>
           <p className="mt-2 text-lg font-semibold">Start of course</p>
         </div>
       )}
       {next ? (
-        <Link href={`/learn/${next.slug}`} className="surface rounded-3xl p-5 text-right">
-          <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Next</p>
+        <Link
+          href={`/learn/${next.slug}`}
+          className="rounded-3xl border border-white/10 bg-white/[0.03] p-5 text-right text-white transition hover:bg-white/[0.05]"
+        >
+          <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Next</p>
           <p className="mt-2 text-lg font-semibold">{next.title}</p>
         </Link>
       ) : (
-        <div className="surface rounded-3xl p-5 text-right opacity-60">
-          <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Next</p>
+        <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5 text-right text-white opacity-60">
+          <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Next</p>
           <p className="mt-2 text-lg font-semibold">Course complete</p>
         </div>
       )}

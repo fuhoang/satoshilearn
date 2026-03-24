@@ -1,14 +1,23 @@
+import Link from "next/link";
+import { lessonConfig } from "@/content/config";
+
 const modules = [
   {
     title: "Foundations",
     description:
       "Understand the basics before anything else",
     lessons: [
-      "What is money?",
-      "The problem with traditional money",
-      "What is Bitcoin?",
-      "Who created Bitcoin?",
-      "Why does Bitcoin matter?",
+      { title: "What is money?", href: "/learn/what-is-money" },
+      {
+        title: "The problem with traditional money",
+        href: "/learn/the-problem-with-traditional-money",
+      },
+      { title: "What is Bitcoin?", href: "/learn/what-is-bitcoin" },
+      { title: "Who created Bitcoin?", href: "/learn/who-created-bitcoin" },
+      {
+        title: "Why does Bitcoin matter?",
+        href: "/learn/why-does-bitcoin-matter",
+      },
     ],
   },
   {
@@ -16,11 +25,26 @@ const modules = [
     description:
       "Build real understanding",
     lessons: [
-      "How Bitcoin works (simple view)",
-      "The blockchain explained",
-      "What makes Bitcoin secure?",
-      "Why Bitcoin is scarce (21 million)",
-      "Decentralisation explained",
+      {
+        title: "How Bitcoin works (simple view)",
+        href: "/learn/how-bitcoin-works-simple-view",
+      },
+      {
+        title: "The blockchain explained",
+        href: "/learn/the-blockchain-explained",
+      },
+      {
+        title: "What makes Bitcoin secure?",
+        href: "/learn/what-makes-bitcoin-secure",
+      },
+      {
+        title: "Why Bitcoin is scarce (21 million)",
+        href: "/learn/why-bitcoin-is-scarce",
+      },
+      {
+        title: "Decentralisation explained",
+        href: "/learn/decentralisation-explained",
+      },
     ],
   },
   {
@@ -28,82 +52,156 @@ const modules = [
     description:
       "This is where most people get confused",
     lessons: [
-      "What is a Bitcoin wallet?",
-      "Custodial vs non-custodial wallets",
-      "Private keys explained",
-      "Seed phrases (very important)",
-      "How to store Bitcoin safely",
+      {
+        title: "What is a Bitcoin wallet?",
+        href: "/learn/what-is-a-bitcoin-wallet",
+      },
+      {
+        title: "Custodial vs non-custodial wallets",
+        href: "/learn/custodial-vs-non-custodial-wallets",
+      },
+      {
+        title: "Private keys explained",
+        href: "/learn/private-keys-explained",
+      },
+      { title: "Seed phrases (very important)", href: "/learn/seed-phrases" },
+      {
+        title: "How to store Bitcoin safely",
+        href: "/learn/how-to-store-bitcoin-safely",
+      },
     ],
   },
   {
     title: "Transactions",
     description: "How Bitcoin actually moves",
     lessons: [
-      "How transactions work",
-      "What are fees?",
-      "Confirmations explained",
-      "Sending and receiving Bitcoin",
-      "Common transaction mistakes",
+      { title: "How transactions work", href: "/learn/how-transactions-work" },
+      { title: "What are fees?", href: "/learn/what-are-fees" },
+      {
+        title: "Confirmations explained",
+        href: "/learn/confirmations-explained",
+      },
+      {
+        title: "Sending and receiving Bitcoin",
+        href: "/learn/sending-and-receiving-bitcoin",
+      },
+      {
+        title: "Common transaction mistakes",
+        href: "/learn/common-transaction-mistakes",
+      },
     ],
   },
   {
     title: "Mining & Network",
     description: "What keeps Bitcoin running",
     lessons: [
-      "What is mining?",
-      "Proof of Work explained",
-      "Why miners exist",
-      "Difficulty and hash rate",
-      "Energy and Bitcoin (simple explanation)",
+      { title: "What is mining?", href: "/learn/what-is-mining" },
+      {
+        title: "Proof of Work explained",
+        href: "/learn/proof-of-work-explained",
+      },
+      { title: "Why miners exist", href: "/learn/why-miners-exist" },
+      {
+        title: "Difficulty and hash rate",
+        href: "/learn/difficulty-and-hash-rate",
+      },
+      {
+        title: "Energy and Bitcoin (simple explanation)",
+        href: "/learn/energy-and-bitcoin",
+      },
     ],
   },
   {
     title: "Safety & Mistakes",
     description: "Critical for beginners",
     lessons: [
-      "Common Bitcoin scams",
-      "How people lose Bitcoin",
-      "Exchange risks",
-      "Phishing and fake apps",
-      "Safety checklist",
+      {
+        title: "Common Bitcoin scams",
+        href: "/learn/common-bitcoin-scams",
+      },
+      {
+        title: "How people lose Bitcoin",
+        href: "/learn/how-people-lose-bitcoin",
+      },
+      { title: "Exchange risks", href: "/learn/exchange-risks" },
+      {
+        title: "Phishing and fake apps",
+        href: "/learn/phishing-and-fake-apps",
+      },
+      { title: "Safety checklist", href: "/learn/safety-checklist" },
     ],
   },
   {
     title: "Real World Use",
     description: "Make it practical",
     lessons: [
-      "How to buy Bitcoin",
-      "Where to buy (exchanges vs P2P)",
-      "Using Bitcoin in daily life",
-      "Storing vs spending",
-      "Long-term thinking",
+      { title: "How to buy Bitcoin", href: "/learn/how-to-buy-bitcoin" },
+      {
+        title: "Where to buy (exchanges vs P2P)",
+        href: "/learn/where-to-buy-bitcoin",
+      },
+      {
+        title: "Using Bitcoin in daily life",
+        href: "/learn/using-bitcoin-in-daily-life",
+      },
+      { title: "Storing vs spending", href: "/learn/storing-vs-spending" },
+      { title: "Long-term thinking", href: "/learn/long-term-thinking" },
     ],
   },
   {
     title: "Advanced Basics (still beginner-friendly)",
     description: "Level up understanding",
     lessons: [
-      "Nodes explained",
-      "Lightning Network (simple)",
-      "Hard forks vs soft forks",
-      "Bitcoin vs other crypto",
-      "Why Bitcoin is different",
+      { title: "Nodes explained", href: "/learn/nodes-explained" },
+      {
+        title: "Lightning Network (simple)",
+        href: "/learn/lightning-network-simple",
+      },
+      {
+        title: "Hard forks vs soft forks",
+        href: "/learn/hard-forks-vs-soft-forks",
+      },
+      {
+        title: "Bitcoin vs other crypto",
+        href: "/learn/bitcoin-vs-other-crypto",
+      },
+      {
+        title: "Why Bitcoin is different",
+        href: "/learn/why-bitcoin-is-different",
+      },
     ],
   },
   {
     title: "Mindset & Strategy",
     description: "This is what most people miss",
     lessons: [
-      "Volatility explained",
-      "Long-term vs short-term thinking",
-      "Emotional mistakes beginners make",
-      "Why people panic sell",
-      "Building conviction",
+      {
+        title: "Volatility explained",
+        href: "/learn/volatility-explained",
+      },
+      {
+        title: "Long-term vs short-term thinking",
+        href: "/learn/long-term-vs-short-term-thinking",
+      },
+      {
+        title: "Emotional mistakes beginners make",
+        href: "/learn/emotional-mistakes-beginners-make",
+      },
+      {
+        title: "Why people panic sell",
+        href: "/learn/why-people-panic-sell",
+      },
+      {
+        title: "Building conviction",
+        href: "/learn/building-conviction",
+      },
     ],
   },
 ] as const;
 
 export default function LearnPage() {
+  const totalLessons = lessonConfig.length;
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       <section className="border-b border-white/10">
@@ -121,7 +219,7 @@ export default function LearnPage() {
             <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
               <p className="text-sm text-zinc-400">Progress</p>
               <p className="mt-1 text-lg font-semibold text-white">
-                0 of 9 lessons completed
+                0 of {totalLessons} lessons completed
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
@@ -151,7 +249,7 @@ export default function LearnPage() {
                 <div className="mt-6 space-y-3">
                   {module.lessons.map((lesson, lessonIndex) => (
                     <div
-                      key={lesson}
+                      key={`${lesson.title}-${lessonIndex + 1}`}
                       className="flex items-center justify-between rounded-2xl border border-white/10 px-4 py-3"
                     >
                       <div>
@@ -159,15 +257,15 @@ export default function LearnPage() {
                           Lesson 0{lessonIndex + 1}
                         </p>
                         <p className="mt-1 text-sm font-medium text-zinc-200">
-                          {lesson}
+                          {lesson.title}
                         </p>
                       </div>
-                      <button
+                      <Link
+                        href={lesson.href}
                         className="rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-white transition hover:bg-white/5"
-                        type="button"
                       >
                         Open
-                      </button>
+                      </Link>
                     </div>
                   ))}
                 </div>
@@ -188,12 +286,12 @@ export default function LearnPage() {
               The best place to begin is with the basics. Build a strong
               foundation first, then move deeper as you go.
             </p>
-            <button
-              className="mt-6 rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-black transition hover:bg-orange-400"
-              type="button"
+            <Link
+              href="/learn/what-is-money"
+              className="mt-6 inline-flex rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-black transition hover:bg-orange-400"
             >
-              Open “What is Bitcoin?”
-            </button>
+              Open “What is Money?”
+            </Link>
           </div>
         </div>
       </section>

@@ -4,6 +4,7 @@ export interface LessonMeta {
   summary: string;
   duration: string;
   order: number;
+  section?: string;
 }
 
 export interface Lesson extends LessonMeta {
