@@ -21,21 +21,27 @@ export async function getOrCreateProfile() {
   const fallbackProfile: Profile = {
     id: user.id,
     email: user.email ?? null,
+    display_name: null,
     created_at: user.created_at,
   };
 
+  const { data: existingProfile, error: selectError } = await supabase
+    .from("profiles")
+    .select("id, email, display_name, created_at")
+    .eq("id", user.id)
+    .single();
+
+  if (!selectError && existingProfile) {
+    return existingProfile as Profile;
+  }
+
   const { data, error } = await supabase
     .from("profiles")
-    .upsert(
-      {
-        id: user.id,
-        email: user.email ?? null,
-      },
-      {
-        onConflict: "id",
-      },
-    )
-    .select("id, email, created_at")
+    .insert({
+      id: user.id,
+      email: user.email ?? null,
+    })
+    .select("id, email, display_name, created_at")
     .single();
 
   if (error || !data) {
@@ -43,4 +49,13 @@ export async function getOrCreateProfile() {
   }
 
   return data as Profile;
+}
+
+export async function getProfileSummary() {
+  const profile = await getOrCreateProfile();
+
+  return {
+    label: profile.display_name || profile.email || "Profile",
+    profile,
+  };
 }

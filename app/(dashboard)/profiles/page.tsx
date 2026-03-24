@@ -1,3 +1,4 @@
+import { ProfileDetailsForm } from "@/components/profile/ProfileDetailsForm";
 import { getOrCreateProfile } from "@/lib/profile";
 
 export default async function ProfilesPage() {
@@ -49,6 +50,8 @@ export default async function ProfilesPage() {
             </p>
           </div>
         </section>
+
+        <ProfileDetailsForm profile={profile} />
 
         <section className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8">
           <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
