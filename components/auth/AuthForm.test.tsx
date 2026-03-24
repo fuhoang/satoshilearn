@@ -7,6 +7,7 @@ const signInWithPassword = vi.fn();
 const signUp = vi.fn();
 const createBrowserSupabaseClient = vi.fn();
 const hasSupabaseEnv = vi.fn();
+const fetchMock = vi.fn();
 
 vi.mock("next/link", () => ({
   default: ({
@@ -39,7 +40,9 @@ describe("AuthForm", () => {
     signUp.mockReset();
     createBrowserSupabaseClient.mockReset();
     hasSupabaseEnv.mockReset();
+    fetchMock.mockReset();
     hasSupabaseEnv.mockReturnValue(true);
+    vi.stubGlobal("fetch", fetchMock);
     Object.defineProperty(window, "location", {
       value: {
         ...originalLocation,
@@ -51,6 +54,7 @@ describe("AuthForm", () => {
   });
 
   afterAll(() => {
+    vi.unstubAllGlobals();
     Object.defineProperty(window, "location", {
       value: originalLocation,
       writable: true,
@@ -70,6 +74,9 @@ describe("AuthForm", () => {
 
   it("logs in and redirects to the requested path", async () => {
     signInWithPassword.mockResolvedValue({ error: null });
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), { status: 200 }),
+    );
     createBrowserSupabaseClient.mockReturnValue({
       auth: {
         signInWithPassword,
@@ -93,6 +100,10 @@ describe("AuthForm", () => {
       });
     });
 
+    expect(fetchMock).toHaveBeenCalledWith("/api/profile/sync", {
+      credentials: "include",
+      method: "POST",
+    });
     expect(window.location.assign).toHaveBeenCalledWith("/learn");
   });
 

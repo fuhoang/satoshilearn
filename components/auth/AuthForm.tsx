@@ -12,6 +12,17 @@ type AuthFormProps = {
   nextPath: string;
 };
 
+async function syncAuthenticatedProfile() {
+  try {
+    await fetch("/api/profile/sync", {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch {
+    // Session creation is more important than best-effort profile sync.
+  }
+}
+
 export function AuthForm({ mode, nextPath }: AuthFormProps) {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [email, setEmail] = useState("");
@@ -46,6 +57,7 @@ export function AuthForm({ mode, nextPath }: AuthFormProps) {
         return;
       }
 
+      await syncAuthenticatedProfile();
       window.location.assign(nextPath);
       return;
     }
@@ -68,6 +80,7 @@ export function AuthForm({ mode, nextPath }: AuthFormProps) {
     }
 
     if (data.session) {
+      await syncAuthenticatedProfile();
       window.location.assign(nextPath);
       return;
     }

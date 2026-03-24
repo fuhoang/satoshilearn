@@ -8,6 +8,8 @@ describe("auth route helpers", () => {
     expect(routeRequiresAuth("/learn")).toBe(true);
     expect(routeRequiresAuth("/learn/module/foundations")).toBe(true);
     expect(routeRequiresAuth("/dashboard")).toBe(true);
+    expect(routeRequiresAuth("/profiles")).toBe(true);
+    expect(routeRequiresAuth("/purchases")).toBe(true);
     expect(routeRequiresAuth("/pricing")).toBe(false);
   });
 

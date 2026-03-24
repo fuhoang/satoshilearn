@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { syncProfileForUser } from "@/lib/profile";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -14,5 +15,14 @@ export async function GET(request: Request) {
   }
 
   await supabase.auth.exchangeCodeForSession(code);
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    await syncProfileForUser(user);
+  }
+
   return NextResponse.redirect(redirectUrl);
 }
