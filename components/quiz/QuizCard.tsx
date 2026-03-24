@@ -83,9 +83,14 @@ export function QuizCard({
         })}
       </div>
       {checked ? (
-        <p className="mt-4 text-sm leading-7 text-zinc-300">
-          {question.explanation}
-        </p>
+        <div className="mt-4 space-y-3">
+          <p className="text-sm leading-7 text-zinc-300">{question.explanation}</p>
+          {activeSelected && activeSelected !== question.correctAnswer && question.reviewHref ? (
+            <LinkLike href={question.reviewHref}>
+              {question.reviewLabel ?? "Review this section"}
+            </LinkLike>
+          ) : null}
+        </div>
       ) : null}
       {!onSelect ? (
         <div className="mt-5">
@@ -100,5 +105,22 @@ export function QuizCard({
         </div>
       ) : null}
     </Card>
+  );
+}
+
+function LinkLike({
+  children,
+  href,
+}: {
+  children: string;
+  href: string;
+}) {
+  return (
+    <a
+      className="inline-flex rounded-full border border-white/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.16em] text-zinc-300 transition hover:bg-white/5 hover:text-white"
+      href={href}
+    >
+      {children}
+    </a>
   );
 }

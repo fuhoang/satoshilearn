@@ -1,8 +1,28 @@
+"use client";
+
 import Link from "next/link";
 
-import type { Lesson } from "@/types/lesson";
+import type { Lesson, ModuleMeta } from "@/types/lesson";
 
-export function LessonHeader({ lesson }: { lesson: Lesson }) {
+import { useLessonProgress } from "@/hooks/useLessonProgress";
+
+type LessonHeaderProps = {
+  lesson: Lesson;
+  module: ModuleMeta | null;
+  moduleLessonIndex: number;
+};
+
+export function LessonHeader({
+  lesson,
+  module,
+  moduleLessonIndex,
+}: LessonHeaderProps) {
+  const { completedLessonSlugs, loaded } = useLessonProgress();
+
+  const completedInModule = module
+    ? module.lessons.filter((item) => completedLessonSlugs.includes(item.slug)).length
+    : 0;
+
   return (
     <header className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8 text-white">
       <Link
@@ -21,6 +41,38 @@ export function LessonHeader({ lesson }: { lesson: Lesson }) {
           Lesson {lesson.order}
         </span>
         <span>{lesson.duration}</span>
+      </div>
+      <div className="mt-5 grid gap-4 rounded-3xl border border-white/10 bg-black/30 p-5 md:grid-cols-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
+            Lesson position
+          </p>
+          <p className="mt-2 text-sm font-medium text-zinc-200">
+            {module
+              ? `Lesson ${moduleLessonIndex + 1} of ${module.lessons.length}`
+              : `Lesson ${lesson.order}`}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
+            Module progress
+          </p>
+          <p className="mt-2 text-sm font-medium text-zinc-200">
+            {module
+              ? loaded
+                ? `${completedInModule} of ${module.lessons.length} completed`
+                : "Syncing progress..."
+              : "Standalone lesson"}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
+            Continue path
+          </p>
+          <p className="mt-2 text-sm font-medium text-zinc-200">
+            Finish the lesson, review the quiz, then move on.
+          </p>
+        </div>
       </div>
       <h1 className="mt-5 max-w-4xl text-4xl font-semibold tracking-tight sm:text-5xl">
         {lesson.title}

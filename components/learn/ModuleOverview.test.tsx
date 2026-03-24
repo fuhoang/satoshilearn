@@ -65,6 +65,7 @@ describe("ModuleOverview", () => {
 
   it("shows completed, unlocked, and locked lessons with the correct CTA", () => {
     mockUseLessonProgress.mockReturnValue({
+      loaded: true,
       completedLessonSlugs: ["what-is-money"],
       completedCount: 1,
       isLessonCompleted: (slug: string) => slug === "what-is-money",

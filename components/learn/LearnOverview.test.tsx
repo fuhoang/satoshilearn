@@ -59,6 +59,7 @@ describe("LearnOverview", () => {
 
   it("renders overall and module progress from lesson completion state", () => {
     mockUseLessonProgress.mockReturnValue({
+      loaded: true,
       completedCount: 1,
       isLessonCompleted: (slug: string) => slug === "what-is-money",
       markLessonCompleted: vi.fn(),

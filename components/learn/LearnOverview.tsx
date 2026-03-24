@@ -15,7 +15,7 @@ export function LearnOverview({
   modules,
   totalLessons,
 }: LearnOverviewProps) {
-  const { completedCount, isLessonCompleted } = useLessonProgress();
+  const { completedCount, isLessonCompleted, loaded } = useLessonProgress();
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
@@ -34,7 +34,9 @@ export function LearnOverview({
             <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
               <p className="text-sm text-zinc-400">Progress</p>
               <p className="mt-1 text-lg font-semibold text-white">
-                {completedCount} of {totalLessons} lessons completed
+                {loaded
+                  ? `${completedCount} of ${totalLessons} lessons completed`
+                  : "Syncing progress..."}
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
@@ -69,7 +71,9 @@ export function LearnOverview({
                   </p>
                   <div className="mt-6 space-y-2">
                     <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
-                      {moduleCompletedCount} of {module.lessons.length} lessons completed
+                      {loaded
+                        ? `${moduleCompletedCount} of ${module.lessons.length} lessons completed`
+                        : "Syncing progress..."}
                     </p>
                   </div>
                   <div className="mt-6 space-y-3">
@@ -92,12 +96,14 @@ export function LearnOverview({
                             </div>
                             <span
                               className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
-                                completed
+                                !loaded
+                                  ? "border border-white/10 bg-black/40 text-zinc-500"
+                                  : completed
                                   ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
                                   : "border border-white/10 bg-white/[0.04] text-zinc-400"
                               }`}
                             >
-                              {completed ? "Completed" : "Pending"}
+                              {!loaded ? "Syncing" : completed ? "Completed" : "Pending"}
                             </span>
                           </div>
                         </div>

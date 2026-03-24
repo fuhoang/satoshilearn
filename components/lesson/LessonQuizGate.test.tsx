@@ -72,6 +72,7 @@ describe("LessonQuizGate", () => {
   beforeEach(() => {
     mockUseLessonProgress.mockReset();
     mockUseLessonProgress.mockReturnValue({
+      loaded: true,
       completedLessonSlugs: [],
       completedCount: 0,
       isLessonCompleted: () => false,
@@ -101,6 +102,7 @@ describe("LessonQuizGate", () => {
     const markLessonCompleted = vi.fn();
 
     mockUseLessonProgress.mockReturnValue({
+      loaded: true,
       completedLessonSlugs: [],
       completedCount: 0,
       isLessonCompleted: () => false,
@@ -122,7 +124,7 @@ describe("LessonQuizGate", () => {
     fireEvent.click(screen.getByRole("button", { name: "Check answers" }));
 
     expect(markLessonCompleted).toHaveBeenCalledWith("lesson-a");
-    expect(screen.getByText("Quiz passed")).toBeInTheDocument();
+    expect(screen.getByText("Lesson complete")).toBeInTheDocument();
     const nextLink = screen.getByText("What Is Bitcoin?").closest("a");
     expect(nextLink).toHaveAttribute("href", "/learn/what-is-bitcoin");
   });

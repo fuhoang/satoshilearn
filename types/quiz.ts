@@ -4,4 +4,6 @@ export interface QuizQuestion {
   options: string[];
   correctAnswer: string;
   explanation: string;
+  reviewHref?: string;
+  reviewLabel?: string;
 }

@@ -11,7 +11,7 @@ type ModuleOverviewProps = {
 };
 
 export default function ModuleOverview({ module }: ModuleOverviewProps) {
-  const { isLessonCompleted } = useLessonProgress();
+  const { isLessonCompleted, loaded } = useLessonProgress();
   const completedCount = module.lessons.filter((lesson) =>
     isLessonCompleted(lesson.slug),
   ).length;
@@ -43,7 +43,9 @@ export default function ModuleOverview({ module }: ModuleOverviewProps) {
               Module {String(module.order).padStart(2, "0")}
             </span>
             <span>
-              {completedCount} of {module.lessons.length} lessons completed
+              {loaded
+                ? `${completedCount} of ${module.lessons.length} lessons completed`
+                : "Syncing progress..."}
             </span>
           </div>
           <h1 className="mt-5 max-w-4xl text-4xl font-semibold tracking-tight sm:text-5xl">
@@ -87,14 +89,22 @@ export default function ModuleOverview({ module }: ModuleOverviewProps) {
                       </p>
                       <span
                         className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
-                          completed
+                          !loaded
+                            ? "border border-white/10 bg-black/40 text-zinc-500"
+                            : completed
                             ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
                             : unlocked
                               ? "border border-white/10 bg-white/[0.04] text-zinc-300"
                               : "border border-white/10 bg-black/40 text-zinc-500"
                         }`}
                       >
-                        {completed ? "Completed" : unlocked ? "Unlocked" : "Locked"}
+                        {!loaded
+                          ? "Syncing"
+                          : completed
+                            ? "Completed"
+                            : unlocked
+                              ? "Unlocked"
+                              : "Locked"}
                       </span>
                     </div>
                     <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">

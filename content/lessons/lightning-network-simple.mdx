@@ -10,4 +10,10 @@ For beginners, it is enough to understand Lightning as an additional tool, not a
 
 Lightning can be useful for small payments, frequent transfers, or use cases where speed matters. But it also introduces extra concepts and tradeoffs, so it is usually learned after the base system makes sense.
 
-The practical takeaway is that Lightning exists because different monetary uses require different layers. Bitcoin's main chain optimizes security and settlement. Lightning aims to improve speed and everyday usability.
+One way to think about Lightning is as a second layer for a different job. Bitcoin's base layer is designed to be robust and highly verifiable, but that design means on-chain settlement is not optimized for every tiny payment. Lightning exists because some use cases care more about speed, lower cost, and frequency than about writing every single movement directly to the blockchain.
+
+That does not make Lightning "better than Bitcoin" or "more real" than the base chain. It means the two layers do different work. The base layer acts more like final settlement. Lightning acts more like a payment network built on top of that settlement layer.
+
+For learners, the main risk is confusion. If you try to understand Lightning before the base system makes sense, it can feel like a stack of moving parts. But if you already understand wallets, transactions, and settlement, Lightning becomes easier to place in context.
+
+The practical takeaway is that Lightning exists because different monetary uses require different layers. Bitcoin's main chain optimizes security and settlement. Lightning aims to improve speed and everyday usability without replacing the foundation underneath.

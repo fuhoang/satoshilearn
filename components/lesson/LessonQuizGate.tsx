@@ -28,7 +28,7 @@ export function LessonQuizGate({
   const [checked, setChecked] = useState(false);
   const [passed, setPassed] = useState(false);
   const [skipped, setSkipped] = useState(false);
-  const { isLessonCompleted, markLessonCompleted } = useLessonProgress();
+  const { isLessonCompleted, loaded, markLessonCompleted } = useLessonProgress();
   const completed = isLessonCompleted(lessonSlug);
   const quizPassed = completed || passed;
 
@@ -65,6 +65,19 @@ export function LessonQuizGate({
 
   return (
     <div className="space-y-8">
+      {quizPassed ? (
+        <div className="rounded-[2rem] border border-emerald-500/20 bg-emerald-500/10 p-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
+            Lesson complete
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">
+            You can move on, or review the key ideas again.
+          </h2>
+          <p className="mt-3 text-sm leading-7 text-zinc-200">
+            Your progress has been saved{loaded ? " and synced." : "."}
+          </p>
+        </div>
+      ) : null}
       <section className="space-y-6">
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-6">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-500">
@@ -85,7 +98,13 @@ export function LessonQuizGate({
               checked={checked}
               index={index + 1}
               onSelect={(answer) => handleSelect(question.id, answer)}
-              question={question}
+              question={{
+                ...question,
+                reviewHref: question.reviewHref ?? `#part-${String(Math.min(index + 1, 3)).padStart(2, "0")}`,
+                reviewLabel:
+                  question.reviewLabel ??
+                  `Review part ${String(Math.min(index + 1, 3)).padStart(2, "0")}`,
+              }}
               selected={answers[question.id] ?? null}
             />
           ))}
@@ -112,6 +131,11 @@ export function LessonQuizGate({
             >
               Skip for now
             </button>
+          ) : null}
+          {!loaded ? (
+            <p className="mt-3 text-center text-xs uppercase tracking-[0.16em] text-zinc-500">
+              Syncing progress...
+            </p>
           ) : null}
         </div>
       </section>
