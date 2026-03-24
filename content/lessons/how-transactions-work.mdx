@@ -1,0 +1,13 @@
+---
+title: How Transactions Work
+---
+
+A Bitcoin transaction is a signed instruction that tells the network how control over bitcoin should change. It does not move a physical object. It updates the ledger by proving that the sender is authorized to spend a certain amount and specifying where that value should go next.
+
+In practice, a wallet builds the transaction for you. It selects spendable outputs, adds a destination address, sets a fee, and creates the digital signature using your private key. Once signed, the transaction is broadcast to the network.
+
+Nodes then validate the transaction. They check whether the signature is valid, whether the coins have already been spent, and whether the transaction follows Bitcoin's rules. If it passes those checks, it can be relayed onward and eventually included in a block.
+
+Once miners include the transaction in a valid block, it becomes part of Bitcoin's public history. That is when the payment starts gaining confirmations. The important idea is that Bitcoin transactions are not based on trust in one company. They are based on rules that the network can verify openly.
+
+So the simple flow is: create, sign, broadcast, validate, confirm. Every Bitcoin payment follows that basic pattern.

@@ -75,33 +75,60 @@ const modules = [
     title: "Transactions",
     description: "How Bitcoin actually moves",
     lessons: [
-      { title: "How transactions work", href: "/learn/transactions" },
-      { title: "What are fees?", href: "/learn/transactions" },
-      { title: "Confirmations explained", href: "/learn/transactions" },
-      { title: "Sending and receiving Bitcoin", href: "/learn/transactions" },
-      { title: "Common transaction mistakes", href: "/learn/transactions" },
+      { title: "How transactions work", href: "/learn/how-transactions-work" },
+      { title: "What are fees?", href: "/learn/what-are-fees" },
+      {
+        title: "Confirmations explained",
+        href: "/learn/confirmations-explained",
+      },
+      {
+        title: "Sending and receiving Bitcoin",
+        href: "/learn/sending-and-receiving-bitcoin",
+      },
+      {
+        title: "Common transaction mistakes",
+        href: "/learn/common-transaction-mistakes",
+      },
     ],
   },
   {
     title: "Mining & Network",
     description: "What keeps Bitcoin running",
     lessons: [
-      { title: "What is mining?", href: "/learn/what-is-bitcoin" },
-      { title: "Proof of Work explained", href: "/learn/what-is-bitcoin" },
-      { title: "Why miners exist", href: "/learn/what-is-bitcoin" },
-      { title: "Difficulty and hash rate", href: "/learn/what-is-bitcoin" },
-      { title: "Energy and Bitcoin (simple explanation)", href: "/learn/what-is-bitcoin" },
+      { title: "What is mining?", href: "/learn/what-is-mining" },
+      {
+        title: "Proof of Work explained",
+        href: "/learn/proof-of-work-explained",
+      },
+      { title: "Why miners exist", href: "/learn/why-miners-exist" },
+      {
+        title: "Difficulty and hash rate",
+        href: "/learn/difficulty-and-hash-rate",
+      },
+      {
+        title: "Energy and Bitcoin (simple explanation)",
+        href: "/learn/energy-and-bitcoin",
+      },
     ],
   },
   {
     title: "Safety & Mistakes",
     description: "Critical for beginners",
     lessons: [
-      { title: "Common Bitcoin scams", href: "/learn/security" },
-      { title: "How people lose Bitcoin", href: "/learn/security" },
-      { title: "Exchange risks", href: "/learn/security" },
-      { title: "Phishing and fake apps", href: "/learn/security" },
-      { title: "Safety checklist", href: "/learn/security" },
+      {
+        title: "Common Bitcoin scams",
+        href: "/learn/common-bitcoin-scams",
+      },
+      {
+        title: "How people lose Bitcoin",
+        href: "/learn/how-people-lose-bitcoin",
+      },
+      { title: "Exchange risks", href: "/learn/exchange-risks" },
+      {
+        title: "Phishing and fake apps",
+        href: "/learn/phishing-and-fake-apps",
+      },
+      { title: "Safety checklist", href: "/learn/safety-checklist" },
     ],
   },
   {
