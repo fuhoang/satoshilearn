@@ -175,11 +175,26 @@ const modules = [
     title: "Mindset & Strategy",
     description: "This is what most people miss",
     lessons: [
-      { title: "Volatility explained", href: "/learn/what-is-money" },
-      { title: "Long-term vs short-term thinking", href: "/learn/what-is-money" },
-      { title: "Emotional mistakes beginners make", href: "/learn/security" },
-      { title: "Why people panic sell", href: "/learn/what-is-money" },
-      { title: "Building conviction", href: "/learn/what-is-bitcoin" },
+      {
+        title: "Volatility explained",
+        href: "/learn/volatility-explained",
+      },
+      {
+        title: "Long-term vs short-term thinking",
+        href: "/learn/long-term-vs-short-term-thinking",
+      },
+      {
+        title: "Emotional mistakes beginners make",
+        href: "/learn/emotional-mistakes-beginners-make",
+      },
+      {
+        title: "Why people panic sell",
+        href: "/learn/why-people-panic-sell",
+      },
+      {
+        title: "Building conviction",
+        href: "/learn/building-conviction",
+      },
     ],
   },
 ] as const;
