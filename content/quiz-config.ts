@@ -1188,30 +1188,4 @@ export const lessonQuizConfig: Record<string, QuizQuestion[]> = {
       "The lesson ties conviction to first-principles understanding.",
     ),
   ],
-  security: [
-    createQuestion(
-      "security",
-      1,
-      "What is the point of a Bitcoin security routine?",
-      [
-        "To reduce avoidable loss through consistent habits and backups.",
-        "To avoid learning how wallets work.",
-        "To let exchanges manage every recovery step.",
-      ],
-      "To reduce avoidable loss through consistent habits and backups.",
-      "Security is mainly about disciplined habits before problems happen.",
-    ),
-    createQuestion(
-      "security",
-      2,
-      "Which approach best matches strong Bitcoin security?",
-      [
-        "Verify carefully, back up responsibly, and avoid rushed decisions.",
-        "Prioritize convenience over recovery every time.",
-        "Share sensitive wallet information whenever support asks.",
-      ],
-      "Verify carefully, back up responsibly, and avoid rushed decisions.",
-      "The lesson emphasizes process, caution, and recovery planning.",
-    ),
-  ],
 };

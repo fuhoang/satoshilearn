@@ -48,4 +48,21 @@ describe("progress route", () => {
 
     expect(payload).toEqual({ completedLessonSlugs: ["what-is-money"] });
   });
+
+  it("sanitizes duplicate and invalid slugs in bulk updates", async () => {
+    const request = new Request("http://localhost/api/progress", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        completedLessonSlugs: ["what-is-money", "", "what-is-money", 12],
+      }),
+    });
+
+    const response = await POST(request);
+    const payload = await response.json();
+
+    expect(payload.completedLessonSlugs).toEqual(["what-is-money"]);
+  });
 });

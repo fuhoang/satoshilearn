@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { ModuleMeta } from "@/types/lesson";
 
 import { useLessonProgress } from "@/hooks/useLessonProgress";
+import { getCompletedModuleLessonCount } from "@/lib/module-progress";
 
 type LearnOverviewProps = {
   modules: ModuleMeta[];
@@ -15,7 +16,8 @@ export function LearnOverview({
   modules,
   totalLessons,
 }: LearnOverviewProps) {
-  const { completedCount, isLessonCompleted, loaded } = useLessonProgress();
+  const { completedCount, completedLessonSlugs, isLessonCompleted, loaded } =
+    useLessonProgress();
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
@@ -51,9 +53,10 @@ export function LearnOverview({
         <div className="mx-auto max-w-6xl px-6 py-16">
           <div className="grid gap-6 lg:grid-cols-3">
             {modules.map((module) => {
-              const moduleCompletedCount = module.lessons.filter((lesson) =>
-                isLessonCompleted(lesson.slug),
-              ).length;
+              const moduleCompletedCount = getCompletedModuleLessonCount(
+                module,
+                completedLessonSlugs,
+              );
 
               return (
                 <article

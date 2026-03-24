@@ -1,44 +1,22 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { EMPTY_LESSON_PROGRESS, sanitizeLessonProgress } from "@/lib/progress";
+
 const PROGRESS_COOKIE = "satoshilearn-progress";
-
-type ProgressPayload = {
-  completedLessonSlugs: string[];
-};
-
-function sanitizeProgress(value: unknown): ProgressPayload {
-  if (
-    !value ||
-    typeof value !== "object" ||
-    !Array.isArray((value as ProgressPayload).completedLessonSlugs)
-  ) {
-    return { completedLessonSlugs: [] };
-  }
-
-  return {
-    completedLessonSlugs: Array.from(
-      new Set(
-        (value as ProgressPayload).completedLessonSlugs.filter(
-          (slug): slug is string => typeof slug === "string" && slug.length > 0,
-        ),
-      ),
-    ),
-  };
-}
 
 async function readProgress() {
   const cookieStore = await cookies();
   const raw = cookieStore.get(PROGRESS_COOKIE)?.value;
 
   if (!raw) {
-    return { completedLessonSlugs: [] };
+    return EMPTY_LESSON_PROGRESS;
   }
 
   try {
-    return sanitizeProgress(JSON.parse(raw));
+    return sanitizeLessonProgress(JSON.parse(raw));
   } catch {
-    return { completedLessonSlugs: [] };
+    return EMPTY_LESSON_PROGRESS;
   }
 }
 
@@ -60,7 +38,7 @@ export async function POST(request: Request) {
 
   const next =
     hasCompletedLessonSlugs
-      ? sanitizeProgress(body)
+      ? sanitizeLessonProgress(body)
       : "slug" in body && body.slug && body.complete
         ? {
             completedLessonSlugs: Array.from(

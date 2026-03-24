@@ -84,7 +84,7 @@ export function LessonQuizGate({
             Lesson quiz
           </p>
           <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">
-            Answer every question correctly to unlock the next lesson.
+            Finish the check, then decide whether to continue or review.
           </h2>
           <p className="mt-3 text-sm leading-7 text-zinc-400">
             Each lesson includes a short multiple-choice check. Pass the quiz to

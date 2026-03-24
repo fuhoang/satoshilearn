@@ -25,12 +25,16 @@ export function getLessonBySlug(slug: string): Lesson | null {
     return null;
   }
 
-  const source = readFileSync(path.join(lessonsDir, `${slug}.mdx`), "utf8");
+  try {
+    const source = readFileSync(path.join(lessonsDir, `${slug}.mdx`), "utf8");
 
-  return {
-    ...meta,
-    body: stripFrontmatter(source),
-  };
+    return {
+      ...meta,
+      body: stripFrontmatter(source),
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function getModuleBySlug(slug: string): ModuleMeta | null {

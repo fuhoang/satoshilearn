@@ -24,7 +24,7 @@ describe("learn page route", () => {
 
     expect(screen.getByTestId("learn-overview")).toHaveAttribute(
       "data-total-lessons",
-      "46",
+      "45",
     );
     expect(screen.getByText("Foundations")).toBeInTheDocument();
     expect(screen.getByText("Mindset & Strategy")).toBeInTheDocument();

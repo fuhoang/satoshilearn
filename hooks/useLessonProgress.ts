@@ -2,45 +2,24 @@
 
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 
+import { EMPTY_LESSON_PROGRESS, sanitizeLessonProgress } from "@/lib/progress";
+import type { LessonProgress } from "@/types/progress";
+
 const STORAGE_KEY = "satoshilearn.lesson-progress";
 const STORAGE_EVENT = "satoshilearn-progress-change";
 
-type StoredProgress = {
-  completedLessonSlugs: string[];
-};
-
-type ProgressStore = StoredProgress & {
+type ProgressStore = LessonProgress & {
   loaded: boolean;
 };
 
 const EMPTY_PROGRESS: ProgressStore = {
-  completedLessonSlugs: [],
+  ...EMPTY_LESSON_PROGRESS,
   loaded: false,
 };
 
 let cachedRawProgress = "";
 let cachedProgress: ProgressStore = EMPTY_PROGRESS;
 let hasLoadedRemoteProgress = false;
-
-function normalizeProgress(value: unknown): StoredProgress {
-  if (
-    !value ||
-    typeof value !== "object" ||
-    !Array.isArray((value as StoredProgress).completedLessonSlugs)
-  ) {
-    return { completedLessonSlugs: [] };
-  }
-
-  return {
-    completedLessonSlugs: Array.from(
-      new Set(
-        (value as StoredProgress).completedLessonSlugs.filter(
-          (slug): slug is string => typeof slug === "string" && slug.length > 0,
-        ),
-      ),
-    ),
-  };
-}
 
 function notifyProgressChange() {
   if (typeof window === "undefined") {
@@ -50,7 +29,7 @@ function notifyProgressChange() {
   window.dispatchEvent(new Event(STORAGE_EVENT));
 }
 
-function writeProgress(progress: StoredProgress, loaded = true) {
+function writeProgress(progress: LessonProgress, loaded = true) {
   const nextProgress: ProgressStore = {
     ...progress,
     loaded,
@@ -82,7 +61,7 @@ function readLocalProgress(): ProgressStore {
       return cachedProgress;
     }
 
-    const normalized = normalizeProgress(JSON.parse(raw));
+    const normalized = sanitizeLessonProgress(JSON.parse(raw));
 
     cachedRawProgress = raw;
     cachedProgress = {
@@ -119,13 +98,14 @@ function subscribe(callback: () => void) {
   if (!hasLoadedRemoteProgress) {
     hasLoadedRemoteProgress = true;
 
+    // Keep the external-store snapshot stable unless the progress payload changed.
     void fetch("/api/progress", { method: "GET", cache: "no-store" })
       .then(async (response) => {
         if (!response.ok) {
           throw new Error("Failed to load progress");
         }
 
-        const payload = normalizeProgress(await response.json());
+        const payload = sanitizeLessonProgress(await response.json());
         const local = readLocalProgress();
         const merged = {
           completedLessonSlugs: Array.from(
@@ -150,7 +130,7 @@ function subscribe(callback: () => void) {
   };
 }
 
-function persistProgress(progress: StoredProgress) {
+function persistProgress(progress: LessonProgress) {
   void fetch("/api/progress", {
     method: "POST",
     headers: {

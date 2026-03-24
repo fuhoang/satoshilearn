@@ -5,28 +5,23 @@ import Link from "next/link";
 import type { ModuleMeta } from "@/types/lesson";
 
 import { useLessonProgress } from "@/hooks/useLessonProgress";
+import {
+  getCompletedModuleLessonCount,
+  getNextModuleLesson,
+  isModuleLessonUnlocked,
+} from "@/lib/module-progress";
 
 type ModuleOverviewProps = {
   module: ModuleMeta;
 };
 
 export default function ModuleOverview({ module }: ModuleOverviewProps) {
-  const { isLessonCompleted, loaded } = useLessonProgress();
-  const completedCount = module.lessons.filter((lesson) =>
-    isLessonCompleted(lesson.slug),
-  ).length;
-
-  const nextLesson =
-    module.lessons.find((lesson, index) => {
-      if (index === 0) {
-        return !isLessonCompleted(lesson.slug);
-      }
-
-      return (
-        isLessonCompleted(module.lessons[index - 1].slug) &&
-        !isLessonCompleted(lesson.slug)
-      );
-    }) ?? module.lessons[module.lessons.length - 1];
+  const { completedLessonSlugs, isLessonCompleted, loaded } = useLessonProgress();
+  const completedCount = getCompletedModuleLessonCount(
+    module,
+    completedLessonSlugs,
+  );
+  const nextLesson = getNextModuleLesson(module, completedLessonSlugs);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
@@ -74,8 +69,11 @@ export default function ModuleOverview({ module }: ModuleOverviewProps) {
           <div className="grid gap-4">
             {module.lessons.map((lesson, index) => {
               const completed = isLessonCompleted(lesson.slug);
-              const unlocked =
-                index === 0 || isLessonCompleted(module.lessons[index - 1].slug);
+              const unlocked = isModuleLessonUnlocked(
+                module,
+                lesson.slug,
+                completedLessonSlugs,
+              );
 
               return (
                 <div

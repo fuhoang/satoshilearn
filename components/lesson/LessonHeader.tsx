@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Lesson, ModuleMeta } from "@/types/lesson";
 
 import { useLessonProgress } from "@/hooks/useLessonProgress";
+import { getCompletedModuleLessonCount } from "@/lib/module-progress";
 
 type LessonHeaderProps = {
   lesson: Lesson;
@@ -18,9 +19,8 @@ export function LessonHeader({
   moduleLessonIndex,
 }: LessonHeaderProps) {
   const { completedLessonSlugs, loaded } = useLessonProgress();
-
   const completedInModule = module
-    ? module.lessons.filter((item) => completedLessonSlugs.includes(item.slug)).length
+    ? getCompletedModuleLessonCount(module, completedLessonSlugs)
     : 0;
 
   return (

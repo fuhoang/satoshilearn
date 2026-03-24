@@ -361,13 +361,6 @@ export const lessonConfig: LessonMeta[] = [
     order: 45,
     section: "Mindset & Strategy",
   },
-  {
-    slug: "security",
-    title: "Security",
-    summary: "Build safe habits for backups, scams, and device hygiene.",
-    duration: "9 min",
-    order: 46,
-  },
 ];
 
 const moduleDefinitions = [
@@ -418,6 +411,8 @@ const moduleDefinitions = [
   },
 ] as const;
 
+// Module membership is derived from lesson.section so the curriculum and lesson
+// routes stay in sync from one metadata source.
 export const moduleConfig: ModuleMeta[] = moduleDefinitions.map(
   (module, index) => ({
     ...module,
