@@ -15,17 +15,19 @@ export function QuizCard() {
   ];
 
   return (
-    <Card className="p-6">
-      <p className="text-sm font-semibold text-[var(--muted)]">Quick Check</p>
-      <h3 className="mt-2 text-xl font-bold">Which statement best explains Bitcoin scarcity?</h3>
+    <Card className="border border-white/10 !bg-white/[0.03] p-6 text-white shadow-none">
+      <p className="text-sm font-semibold text-zinc-500">Quick Check</p>
+      <h3 className="mt-2 text-xl font-bold text-white">
+        Which statement best explains Bitcoin scarcity?
+      </h3>
       <div className="mt-5 space-y-3">
         {options.map((option) => (
           <button
             key={option}
             className={`w-full rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${
               selected === option
-                ? "border-amber-700/30 bg-amber-50"
-                : "border-black/10 bg-white/80 hover:bg-black/5"
+                ? "border-orange-500/40 bg-orange-500/10 text-white"
+                : "border-white/10 bg-black/40 text-zinc-300 hover:bg-white/[0.05]"
             }`}
             onClick={() => setSelected(option)}
             type="button"
@@ -35,7 +37,7 @@ export function QuizCard() {
         ))}
       </div>
       <div className="mt-5">
-        <Button variant="secondary">
+        <Button className="w-full bg-orange-500 !text-black hover:bg-orange-400" variant="primary">
           {selected === options[1] ? "Correct answer selected" : "Select an answer"}
         </Button>
       </div>
