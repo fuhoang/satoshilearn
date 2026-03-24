@@ -18,62 +18,10 @@ export default async function ProfilesPage() {
           </p>
         </section>
 
-        <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-5">
-          <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-6">
-            <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
-              Email
-            </p>
-            <p className="mt-3 break-all text-lg font-medium text-white">
-              {profile.email ?? "No email available"}
-            </p>
-          </div>
-
-          <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-6">
-            <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
-              Display name
-            </p>
-            <p className="mt-3 text-lg font-medium text-white">
-              {profile.display_name ?? "Not set yet"}
-            </p>
-          </div>
-
-          <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-6">
-            <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
-              Timezone
-            </p>
-            <p className="mt-3 text-lg font-medium text-white">
-              {profile.timezone ?? "Not set yet"}
-            </p>
-          </div>
-
-          <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-6">
-            <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
-              Profile ID
-            </p>
-            <p className="mt-3 break-all text-sm leading-7 text-zinc-300">
-              {profile.id}
-            </p>
-          </div>
-
-          <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-6">
-            <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
-              Created
-            </p>
-            <p className="mt-3 text-lg font-medium text-white">
-              {new Date(profile.created_at).toLocaleDateString("en-GB", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
-            </p>
-          </div>
-
-          <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-6">
-            <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
-              Avatar
-            </p>
-            <div className="mt-3 flex items-center gap-3">
-              <span className="inline-flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white/5 text-sm font-semibold text-white">
+        <section className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex items-start gap-4">
+              <span className="inline-flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white/5 text-lg font-semibold text-white">
                 {profile.avatar_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -87,24 +35,68 @@ export default async function ProfilesPage() {
                     .toUpperCase()
                 )}
               </span>
-              <p className="min-w-0 text-sm leading-6 text-zinc-300">
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
+                  Account overview
+                </p>
+                <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+                  {profile.display_name ?? "No display name yet"}
+                </h2>
+                <p className="mt-3 break-all text-sm leading-7 text-zinc-300">
+                  {profile.email ?? "No email available"}
+                </p>
+                <p className="mt-4 max-w-2xl text-sm leading-8 text-zinc-300">
+                  {profile.bio ??
+                    "Add a short note about how you want to learn Bitcoin, what pace suits you, or what you are focused on next."}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-zinc-300 lg:min-w-72">
+              <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
+                Avatar source
+              </p>
+              <p className="mt-3 break-all leading-7">
                 {profile.avatar_url ?? "Not set yet"}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-4 border-t border-white/10 pt-8 md:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
+                Timezone
+              </p>
+              <p className="mt-3 text-sm leading-7 text-zinc-200">
+                {profile.timezone ?? "Not set yet"}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
+                Created
+              </p>
+              <p className="mt-3 text-sm leading-7 text-zinc-200">
+                {new Date(profile.created_at).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
+                Profile ID
+              </p>
+              <p className="mt-3 break-all text-sm leading-7 text-zinc-200">
+                {profile.id}
               </p>
             </div>
           </div>
         </section>
 
         <ProfileDetailsForm profile={profile} />
-
-        <section className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8">
-          <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
-            Bio
-          </p>
-          <p className="mt-4 max-w-3xl text-sm leading-8 text-zinc-300">
-            {profile.bio ??
-              "Add a short note about how you want to learn Bitcoin, what pace suits you, or what you are focused on next."}
-          </p>
-        </section>
 
         <section className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8">
           <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
