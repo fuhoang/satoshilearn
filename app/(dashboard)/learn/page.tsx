@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { lessonConfig } from "@/content/config";
 
 const modules = [
   {
@@ -24,11 +25,26 @@ const modules = [
     description:
       "Build real understanding",
     lessons: [
-      { title: "How Bitcoin works (simple view)", href: "/learn/what-is-bitcoin" },
-      { title: "The blockchain explained", href: "/learn/transactions" },
-      { title: "What makes Bitcoin secure?", href: "/learn/security" },
-      { title: "Why Bitcoin is scarce (21 million)", href: "/learn/what-is-bitcoin" },
-      { title: "Decentralisation explained", href: "/learn/what-is-bitcoin" },
+      {
+        title: "How Bitcoin works (simple view)",
+        href: "/learn/how-bitcoin-works-simple-view",
+      },
+      {
+        title: "The blockchain explained",
+        href: "/learn/the-blockchain-explained",
+      },
+      {
+        title: "What makes Bitcoin secure?",
+        href: "/learn/what-makes-bitcoin-secure",
+      },
+      {
+        title: "Why Bitcoin is scarce (21 million)",
+        href: "/learn/why-bitcoin-is-scarce",
+      },
+      {
+        title: "Decentralisation explained",
+        href: "/learn/decentralisation-explained",
+      },
     ],
   },
   {
@@ -112,6 +128,8 @@ const modules = [
 ] as const;
 
 export default function LearnPage() {
+  const totalLessons = lessonConfig.length;
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       <section className="border-b border-white/10">
@@ -129,7 +147,7 @@ export default function LearnPage() {
             <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
               <p className="text-sm text-zinc-400">Progress</p>
               <p className="mt-1 text-lg font-semibold text-white">
-                0 of 9 lessons completed
+                0 of {totalLessons} lessons completed
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">

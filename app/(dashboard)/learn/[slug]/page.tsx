@@ -6,6 +6,7 @@ import { LessonNavigation } from "@/components/lesson/LessonNavigation";
 import { ProgressBar } from "@/components/lesson/ProgressBar";
 import { QuizCard } from "@/components/quiz/QuizCard";
 import { QuizResult } from "@/components/quiz/QuizResult";
+import { lessonConfig } from "@/content/config";
 import { getAdjacentLessons, getLessonBySlug } from "@/lib/lessons";
 
 export default async function LearnLessonPage({
@@ -21,7 +22,7 @@ export default async function LearnLessonPage({
   }
 
   const adjacent = getAdjacentLessons(slug);
-  const progress = Math.round((lesson.order / 5) * 100);
+  const progress = Math.round((lesson.order / lessonConfig.length) * 100);
   const keyPoints = lesson.body
     .split("\n\n")
     .map((paragraph) => paragraph.trim())
