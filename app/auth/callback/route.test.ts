@@ -1,14 +1,22 @@
 const exchangeCodeForSession = vi.fn();
+const getUser = vi.fn();
 const createServerSupabaseClient = vi.fn();
+const syncProfileForUser = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createServerSupabaseClient: () => createServerSupabaseClient(),
 }));
 
+vi.mock("@/lib/profile", () => ({
+  syncProfileForUser: (...args: unknown[]) => syncProfileForUser(...args),
+}));
+
 describe("auth callback route", () => {
   beforeEach(() => {
     exchangeCodeForSession.mockReset();
+    getUser.mockReset();
     createServerSupabaseClient.mockReset();
+    syncProfileForUser.mockReset();
   });
 
   it("redirects to /learn when no code is provided", async () => {
@@ -25,6 +33,15 @@ describe("auth callback route", () => {
     createServerSupabaseClient.mockResolvedValue({
       auth: {
         exchangeCodeForSession,
+        getUser,
+      },
+    });
+    getUser.mockResolvedValue({
+      data: {
+        user: {
+          id: "user-1",
+          email: "user@example.com",
+        },
       },
     });
     const { GET } = await import("@/app/auth/callback/route");
@@ -34,6 +51,10 @@ describe("auth callback route", () => {
     );
 
     expect(exchangeCodeForSession).toHaveBeenCalledWith("abc123");
+    expect(syncProfileForUser).toHaveBeenCalledWith({
+      id: "user-1",
+      email: "user@example.com",
+    });
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe("http://localhost/dashboard");
   });
