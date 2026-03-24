@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { ModuleOverview } from "@/components/learn/ModuleOverview";
+import ModuleOverview from "@/components/learn/ModuleOverview";
 import { getModuleBySlug } from "@/lib/lessons";
 
 export default async function LearnModulePage({

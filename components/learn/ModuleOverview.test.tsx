@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 
-import { ModuleOverview } from "@/components/learn/ModuleOverview";
+import ModuleOverview from "@/components/learn/ModuleOverview";
 import type { ModuleMeta } from "@/types/lesson";
 
 const mockUseLessonProgress = vi.fn();

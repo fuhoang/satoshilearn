@@ -10,7 +10,7 @@ type ModuleOverviewProps = {
   module: ModuleMeta;
 };
 
-export function ModuleOverview({ module }: ModuleOverviewProps) {
+export default function ModuleOverview({ module }: ModuleOverviewProps) {
   const { isLessonCompleted } = useLessonProgress();
   const completedCount = module.lessons.filter((lesson) =>
     isLessonCompleted(lesson.slug),
