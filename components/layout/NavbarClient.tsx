@@ -146,13 +146,17 @@ export function NavbarClient({
                     >
                       Purchases
                     </Link>
-                    <a
-                      className="rounded-2xl px-4 py-3 text-sm text-white transition hover:bg-white/5"
-                      href="/auth/logout"
-                      rel="nofollow"
+                    <form
+                      action="/auth/logout"
+                      method="post"
                     >
-                      Log out
-                    </a>
+                      <button
+                        className="w-full rounded-2xl px-4 py-3 text-left text-sm text-white transition hover:bg-white/5"
+                        type="submit"
+                      >
+                        Log out
+                      </button>
+                    </form>
                   </div>
                 </div>
               ) : null}
@@ -208,15 +212,14 @@ export function NavbarClient({
                       Purchases
                     </Button>
                   </Link>
-                  <a
-                    href="/auth/logout"
-                    onClick={() => setIsMenuOpen(false)}
-                    rel="nofollow"
+                  <form
+                    action="/auth/logout"
+                    method="post"
                   >
                     <Button className="w-full" variant="secondary">
                       Log out
                     </Button>
-                  </a>
+                  </form>
                 </>
               ) : (
                 <>

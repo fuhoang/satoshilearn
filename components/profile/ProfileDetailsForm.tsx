@@ -27,6 +27,7 @@ export function ProfileDetailsForm({ profile }: ProfileDetailsFormProps) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState(profile.display_name ?? "");
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url ?? "");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [bio, setBio] = useState(profile.bio ?? "");
   const [timezone, setTimezone] = useState(profile.timezone ?? "");
   const [savedName, setSavedName] = useState(profile.display_name ?? "");
@@ -51,13 +52,37 @@ export function ProfileDetailsForm({ profile }: ProfileDetailsFormProps) {
     setMessage(null);
     setIsSaving(true);
 
+    let nextAvatarUrl = avatarUrl;
+
+    if (avatarFile) {
+      const uploadFormData = new FormData();
+      uploadFormData.set("file", avatarFile);
+
+      const uploadResponse = await fetch("/api/profile/avatar", {
+        method: "POST",
+        body: uploadFormData,
+      });
+
+      if (!uploadResponse.ok) {
+        const payload = (await uploadResponse.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        setError(payload?.error ?? "Unable to upload your avatar right now.");
+        setIsSaving(false);
+        return;
+      }
+
+      const payload = (await uploadResponse.json()) as { avatarUrl?: string };
+      nextAvatarUrl = payload.avatarUrl ?? "";
+    }
+
     const response = await fetch("/api/profile", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        avatar_url: avatarUrl,
+        avatar_url: nextAvatarUrl,
         bio,
         display_name: displayName,
         timezone,
@@ -78,6 +103,7 @@ export function ProfileDetailsForm({ profile }: ProfileDetailsFormProps) {
 
     setDisplayName(nextProfile.display_name ?? "");
     setAvatarUrl(nextProfile.avatar_url ?? "");
+    setAvatarFile(null);
     setBio(nextProfile.bio ?? "");
     setTimezone(nextProfile.timezone ?? "");
     setSavedName(nextProfile.display_name ?? "");
@@ -123,15 +149,19 @@ export function ProfileDetailsForm({ profile }: ProfileDetailsFormProps) {
         </div>
 
         <label className="block">
-          <span className="text-sm text-zinc-400">Avatar URL</span>
+          <span className="text-sm text-zinc-400">Avatar image</span>
           <input
-            className="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-orange-500/40"
-            maxLength={500}
-            onChange={(event) => setAvatarUrl(event.target.value)}
-            placeholder="https://example.com/avatar.jpg"
-            type="url"
-            value={avatarUrl}
+            accept="image/png,image/jpeg,image/webp"
+            aria-label="Avatar image"
+            className="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none file:mr-3 file:rounded-full file:border-0 file:bg-orange-500 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-black hover:file:bg-orange-400"
+            onChange={(event) =>
+              setAvatarFile(event.target.files?.[0] ?? null)
+            }
+            type="file"
           />
+          <p className="mt-2 text-xs text-zinc-500">
+            Upload a JPG, PNG, or WebP image up to 2MB.
+          </p>
         </label>
 
         <label className="block">

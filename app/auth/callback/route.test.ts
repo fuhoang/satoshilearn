@@ -58,4 +58,27 @@ describe("auth callback route", () => {
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe("http://localhost/dashboard");
   });
+
+  it("falls back to /learn for unsafe next paths", async () => {
+    createServerSupabaseClient.mockResolvedValue({
+      auth: {
+        exchangeCodeForSession,
+        getUser,
+      },
+    });
+    getUser.mockResolvedValue({
+      data: {
+        user: null,
+      },
+    });
+    const { GET } = await import("@/app/auth/callback/route");
+
+    const response = await GET(
+      new Request("http://localhost/auth/callback?code=abc123&next=https://evil.example"),
+    );
+
+    expect(exchangeCodeForSession).toHaveBeenCalledWith("abc123");
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("http://localhost/learn");
+  });
 });

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/Button";
+import { buildAuthCallbackUrl, sanitizeNextPath } from "@/lib/auth-redirects";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { hasSupabaseEnv } from "@/lib/supabase/config";
 
@@ -11,12 +12,6 @@ type AuthFormProps = {
   mode: "login" | "register";
   nextPath: string;
 };
-
-function buildAuthCallbackUrl(nextPath: string) {
-  const callbackUrl = new URL("/auth/callback", window.location.origin);
-  callbackUrl.searchParams.set("next", nextPath);
-  return callbackUrl.toString();
-}
 
 async function syncAuthenticatedProfile() {
   try {
@@ -31,6 +26,7 @@ async function syncAuthenticatedProfile() {
 
 export function AuthForm({ mode, nextPath }: AuthFormProps) {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
+  const safeNextPath = sanitizeNextPath(nextPath);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +48,7 @@ export function AuthForm({ mode, nextPath }: AuthFormProps) {
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: buildAuthCallbackUrl(nextPath),
+        redirectTo: buildAuthCallbackUrl(window.location.origin, safeNextPath),
       },
     });
 
@@ -93,7 +89,7 @@ export function AuthForm({ mode, nextPath }: AuthFormProps) {
       }
 
       await syncAuthenticatedProfile();
-      window.location.assign(nextPath);
+      window.location.assign(safeNextPath);
       return;
     }
 
@@ -101,7 +97,7 @@ export function AuthForm({ mode, nextPath }: AuthFormProps) {
       email,
       password,
       options: {
-        emailRedirectTo: buildAuthCallbackUrl(nextPath),
+        emailRedirectTo: buildAuthCallbackUrl(window.location.origin, safeNextPath),
       },
     });
 
@@ -113,7 +109,7 @@ export function AuthForm({ mode, nextPath }: AuthFormProps) {
 
     if (data.session) {
       await syncAuthenticatedProfile();
-      window.location.assign(nextPath);
+      window.location.assign(safeNextPath);
       return;
     }
 

@@ -47,7 +47,8 @@ describe("ProfileDetailsForm", () => {
           profile: {
             ...profile,
             display_name: "Nakamoto",
-            avatar_url: "https://example.com/avatar.png",
+            avatar_url:
+              "https://project.supabase.co/storage/v1/object/public/avatars/user-1/avatar.png",
             bio: "Bitcoin learner",
             timezone: "America/New_York",
           },
@@ -64,9 +65,6 @@ describe("ProfileDetailsForm", () => {
     fireEvent.change(screen.getByLabelText("Timezone"), {
       target: { value: "America/New_York" },
     });
-    fireEvent.change(screen.getByLabelText("Avatar URL"), {
-      target: { value: "https://example.com/avatar.png" },
-    });
     fireEvent.change(screen.getByLabelText("Bio"), {
       target: { value: "Bitcoin learner" },
     });
@@ -75,7 +73,7 @@ describe("ProfileDetailsForm", () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith("/api/profile", {
         body: JSON.stringify({
-          avatar_url: "https://example.com/avatar.png",
+          avatar_url: "",
           bio: "Bitcoin learner",
           display_name: "Nakamoto",
           timezone: "America/New_York",
@@ -111,5 +109,63 @@ describe("ProfileDetailsForm", () => {
       ),
     ).toBeInTheDocument();
     expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("uploads a selected avatar before saving the profile", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            avatarUrl:
+              "https://project.supabase.co/storage/v1/object/public/avatars/user-1/avatar.png",
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            profile: {
+              ...profile,
+              avatar_url:
+                "https://project.supabase.co/storage/v1/object/public/avatars/user-1/avatar.png",
+            },
+          }),
+          { status: 200 },
+        ),
+      );
+
+    render(<ProfileDetailsForm profile={profile} />);
+
+    const file = new File(["avatar"], "avatar.png", { type: "image/png" });
+    fireEvent.change(screen.getByLabelText("Avatar image"), {
+      target: { files: [file] },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save profile" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        1,
+        "/api/profile/avatar",
+        expect.objectContaining({
+          method: "POST",
+          body: expect.any(FormData),
+        }),
+      );
+    });
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "/api/profile",
+      expect.objectContaining({
+        body: JSON.stringify({
+          avatar_url:
+            "https://project.supabase.co/storage/v1/object/public/avatars/user-1/avatar.png",
+          bio: "",
+          display_name: "Satoshi",
+          timezone: "Europe/London",
+        }),
+      }),
+    );
   });
 });

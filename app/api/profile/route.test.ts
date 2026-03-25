@@ -4,9 +4,14 @@ const select = vi.fn();
 const single = vi.fn();
 const from = vi.fn();
 const createServerSupabaseClient = vi.fn();
+const getSupabaseBrowserEnv = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createServerSupabaseClient: () => createServerSupabaseClient(),
+}));
+
+vi.mock("@/lib/supabase/config", () => ({
+  getSupabaseBrowserEnv: () => getSupabaseBrowserEnv(),
 }));
 
 describe("profile route", () => {
@@ -23,6 +28,10 @@ describe("profile route", () => {
         getUser,
       },
       from,
+    });
+    getSupabaseBrowserEnv.mockReturnValue({
+      url: "https://project.supabase.co",
+      anonKey: "public-key",
     });
     from.mockReturnValue({
       upsert,
@@ -68,7 +77,8 @@ describe("profile route", () => {
         id: "user-1",
         email: "user@example.com",
         display_name: "Satoshi",
-        avatar_url: "https://example.com/avatar.png",
+        avatar_url:
+          "https://project.supabase.co/storage/v1/object/public/avatars/user-1/avatar.png",
         bio: "Bitcoin learner",
         timezone: "Europe/London",
         created_at: "2026-03-24T00:00:00.000Z",
@@ -85,7 +95,8 @@ describe("profile route", () => {
         },
         body: JSON.stringify({
           display_name: "  Satoshi  ",
-          avatar_url: "https://example.com/avatar.png",
+          avatar_url:
+            "https://project.supabase.co/storage/v1/object/public/avatars/user-1/avatar.png",
           bio: "  Bitcoin learner  ",
           timezone: "  Europe/London  ",
         }),
@@ -94,7 +105,8 @@ describe("profile route", () => {
 
     expect(upsert).toHaveBeenCalledWith(
       {
-        avatar_url: "https://example.com/avatar.png",
+        avatar_url:
+          "https://project.supabase.co/storage/v1/object/public/avatars/user-1/avatar.png",
         bio: "Bitcoin learner",
         display_name: "Satoshi",
         email: "user@example.com",
@@ -136,7 +148,7 @@ describe("profile route", () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          avatar_url: "javascript:alert(1)",
+          avatar_url: "https://example.com/avatar.png",
         }),
       }),
     );
