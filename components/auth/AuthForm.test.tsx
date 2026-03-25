@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { AuthForm } from "@/components/auth/AuthForm";
 
 const signInWithPassword = vi.fn();
+const signInWithOAuth = vi.fn();
 const signUp = vi.fn();
 const createBrowserSupabaseClient = vi.fn();
 const hasSupabaseEnv = vi.fn();
@@ -37,6 +38,7 @@ describe("AuthForm", () => {
 
   beforeEach(() => {
     signInWithPassword.mockReset();
+    signInWithOAuth.mockReset();
     signUp.mockReset();
     createBrowserSupabaseClient.mockReset();
     hasSupabaseEnv.mockReset();
@@ -79,6 +81,7 @@ describe("AuthForm", () => {
     );
     createBrowserSupabaseClient.mockReturnValue({
       auth: {
+        signInWithOAuth,
         signInWithPassword,
       },
     });
@@ -114,6 +117,7 @@ describe("AuthForm", () => {
     });
     createBrowserSupabaseClient.mockReturnValue({
       auth: {
+        signInWithOAuth,
         signUp,
       },
     });
@@ -135,5 +139,27 @@ describe("AuthForm", () => {
     expect(
       screen.getByText(/Check your email to confirm your address/i),
     ).toBeInTheDocument();
+  });
+
+  it("starts Google OAuth with the auth callback redirect", async () => {
+    signInWithOAuth.mockResolvedValue({ error: null });
+    createBrowserSupabaseClient.mockReturnValue({
+      auth: {
+        signInWithOAuth,
+      },
+    });
+
+    render(<AuthForm mode="login" nextPath="/learn" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+
+    await waitFor(() => {
+      expect(signInWithOAuth).toHaveBeenCalledWith({
+        options: {
+          redirectTo: "http://localhost:3000/auth/callback?next=%2Flearn",
+        },
+        provider: "google",
+      });
+    });
   });
 });
