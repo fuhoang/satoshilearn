@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/Button";
@@ -10,7 +10,7 @@ type ProfileDetailsFormProps = {
   profile: Profile;
 };
 
-const FALLBACK_TIMEZONES = [
+const TIMEZONE_OPTIONS = [
   "Europe/London",
   "Europe/Paris",
   "Europe/Berlin",
@@ -25,8 +25,10 @@ const FALLBACK_TIMEZONES = [
 
 export function ProfileDetailsForm({ profile }: ProfileDetailsFormProps) {
   const router = useRouter();
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const [displayName, setDisplayName] = useState(profile.display_name ?? "");
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url ?? "");
+  const [avatarUrlToDelete, setAvatarUrlToDelete] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [bio, setBio] = useState(profile.bio ?? "");
   const [timezone, setTimezone] = useState(profile.timezone ?? "");
@@ -35,17 +37,6 @@ export function ProfileDetailsForm({ profile }: ProfileDetailsFormProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isRemovingAvatar, setIsRemovingAvatar] = useState(false);
-  const timezones = useMemo(() => {
-    const supportedValuesOf = Intl.supportedValuesOf as
-      | ((key: "timeZone") => string[])
-      | undefined;
-
-    if (typeof supportedValuesOf === "function") {
-      return supportedValuesOf("timeZone");
-    }
-
-    return FALLBACK_TIMEZONES;
-  }, []);
 
   const avatarPreviewUrl = useMemo(
     () => (avatarFile ? URL.createObjectURL(avatarFile) : null),
@@ -62,10 +53,29 @@ export function ProfileDetailsForm({ profile }: ProfileDetailsFormProps) {
 
   const activeAvatarUrl = avatarPreviewUrl ?? avatarUrl;
   const hasAvatar = Boolean(avatarUrl.trim() || avatarPreviewUrl);
+  const avatarSizeLabel = avatarFile
+    ? `${(avatarFile.size / 1024 / 1024).toFixed(2)} MB`
+    : null;
+
+  async function deleteAvatar(avatarToDelete: string) {
+    await fetch("/api/profile/avatar", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        avatarUrl: avatarToDelete,
+      }),
+    });
+  }
 
   async function handleRemoveAvatar() {
     if (!avatarUrl.trim()) {
       setAvatarFile(null);
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = "";
+      }
+      setAvatarUrlToDelete(null);
       setMessage("Avatar cleared from the form.");
       return;
     }
@@ -73,29 +83,13 @@ export function ProfileDetailsForm({ profile }: ProfileDetailsFormProps) {
     setError(null);
     setMessage(null);
     setIsRemovingAvatar(true);
-
-    const response = await fetch("/api/profile/avatar", {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        avatarUrl,
-      }),
-    });
-
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as
-        | { error?: string }
-        | null;
-      setError(payload?.error ?? "Unable to remove your avatar right now.");
-      setIsRemovingAvatar(false);
-      return;
-    }
-
+    setAvatarUrlToDelete(avatarUrl);
     setAvatarUrl("");
     setAvatarFile(null);
-    setMessage("Avatar removed. Save your profile to confirm the change.");
+    if (avatarInputRef.current) {
+      avatarInputRef.current.value = "";
+    }
+    setMessage("Avatar will be removed when you save your profile.");
     setIsRemovingAvatar(false);
   }
 
@@ -105,6 +99,7 @@ export function ProfileDetailsForm({ profile }: ProfileDetailsFormProps) {
     setMessage(null);
     setIsSaving(true);
 
+    const previousAvatarUrl = avatarUrlToDelete ?? avatarUrl;
     let nextAvatarUrl = avatarUrl;
 
     if (avatarFile) {
@@ -127,6 +122,7 @@ export function ProfileDetailsForm({ profile }: ProfileDetailsFormProps) {
 
       const payload = (await uploadResponse.json()) as { avatarUrl?: string };
       nextAvatarUrl = payload.avatarUrl ?? "";
+      setMessage("Avatar uploaded. Finishing your profile update...");
     }
 
     const response = await fetch("/api/profile", {
@@ -146,6 +142,9 @@ export function ProfileDetailsForm({ profile }: ProfileDetailsFormProps) {
       const payload = (await response.json().catch(() => null)) as
         | { error?: string }
         | null;
+      if (nextAvatarUrl && nextAvatarUrl !== previousAvatarUrl) {
+        void deleteAvatar(nextAvatarUrl);
+      }
       setError(payload?.error ?? "Unable to update your profile right now.");
       setIsSaving(false);
       return;
@@ -156,12 +155,19 @@ export function ProfileDetailsForm({ profile }: ProfileDetailsFormProps) {
 
     setDisplayName(nextProfile.display_name ?? "");
     setAvatarUrl(nextProfile.avatar_url ?? "");
+    setAvatarUrlToDelete(null);
     setAvatarFile(null);
+    if (avatarInputRef.current) {
+      avatarInputRef.current.value = "";
+    }
     setBio(nextProfile.bio ?? "");
     setTimezone(nextProfile.timezone ?? "");
     setSavedName(nextProfile.display_name ?? "");
     setMessage("Profile updated.");
     setIsSaving(false);
+    if (previousAvatarUrl && previousAvatarUrl !== nextProfile.avatar_url) {
+      void deleteAvatar(previousAvatarUrl);
+    }
     router.refresh();
   }
 
@@ -192,7 +198,7 @@ export function ProfileDetailsForm({ profile }: ProfileDetailsFormProps) {
               value={timezone}
             >
               <option value="">Select a timezone</option>
-              {timezones.map((timezoneOption) => (
+              {TIMEZONE_OPTIONS.map((timezoneOption) => (
                 <option key={timezoneOption} value={timezoneOption}>
                   {timezoneOption}
                 </option>
@@ -207,6 +213,7 @@ export function ProfileDetailsForm({ profile }: ProfileDetailsFormProps) {
             accept="image/png,image/jpeg,image/webp"
             aria-label="Avatar image"
             className="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none file:mr-3 file:rounded-full file:border-0 file:bg-orange-500 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-black hover:file:bg-orange-400"
+            ref={avatarInputRef}
             onChange={(event) =>
               setAvatarFile(event.target.files?.[0] ?? null)
             }
@@ -243,10 +250,15 @@ export function ProfileDetailsForm({ profile }: ProfileDetailsFormProps) {
                     ? "Replace it with another file, or remove it below."
                     : "Upload a square image for the cleanest result."}
               </p>
+              {avatarFile ? (
+                <p className="mt-1 text-xs uppercase tracking-[0.16em] text-orange-300">
+                  Pending upload {avatarSizeLabel ? `· ${avatarSizeLabel}` : ""}
+                </p>
+              ) : null}
             </div>
             {hasAvatar ? (
               <Button
-                className="border border-white/10 bg-white/5 !text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                className="border border-white/10 bg-white !text-black hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={isRemovingAvatar || isSaving}
                 onClick={handleRemoveAvatar}
                 type="button"
@@ -269,7 +281,7 @@ export function ProfileDetailsForm({ profile }: ProfileDetailsFormProps) {
           />
         </label>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
             <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
               Current display name
@@ -294,28 +306,6 @@ export function ProfileDetailsForm({ profile }: ProfileDetailsFormProps) {
               {profile.email ?? "No email available"}
             </p>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-            <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
-              Avatar
-            </p>
-            <div className="mt-2 flex items-center gap-3">
-              <span className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white/5 text-sm font-semibold text-white">
-                {activeAvatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    alt="Profile avatar preview"
-                    className="h-full w-full object-cover"
-                    src={activeAvatarUrl}
-                  />
-                ) : (
-                  (savedName || profile.email || "P").charAt(0).toUpperCase()
-                )}
-              </span>
-              <p className="min-w-0 text-sm text-zinc-200">
-                {avatarFile ? avatarFile.name : activeAvatarUrl || "Not set yet"}
-              </p>
-            </div>
-          </div>
         </div>
 
         {error ? (
@@ -330,13 +320,35 @@ export function ProfileDetailsForm({ profile }: ProfileDetailsFormProps) {
           </p>
         ) : null}
 
-        <Button
-          className="bg-orange-500 !text-black hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
-          disabled={isSaving}
-          type="submit"
-        >
-          {isSaving ? "Saving..." : "Save profile"}
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            className="bg-orange-500 !text-black hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+            disabled={isSaving}
+            type="submit"
+          >
+            {isSaving
+              ? avatarFile
+                ? "Uploading avatar..."
+                : "Saving..."
+              : avatarFile
+                ? "Upload avatar and save"
+                : "Save profile"}
+          </Button>
+          {avatarFile ? (
+            <button
+              className="text-sm font-medium text-zinc-400 transition hover:text-white"
+              onClick={() => {
+                setAvatarFile(null);
+                if (avatarInputRef.current) {
+                  avatarInputRef.current.value = "";
+                }
+              }}
+              type="button"
+            >
+              Clear selected file
+            </button>
+          ) : null}
+        </div>
       </form>
     </section>
   );

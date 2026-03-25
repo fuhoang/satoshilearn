@@ -46,6 +46,8 @@ describe("profile avatar route", () => {
           "https://project.supabase.co/storage/v1/object/public/avatars/user-1/avatar.png",
       },
     });
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://project.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY", "anon-key");
   });
 
   it("requires an authenticated user", async () => {
@@ -118,5 +120,28 @@ describe("profile avatar route", () => {
     expect(remove).toHaveBeenCalledWith(["user-1/avatar.png"]);
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ removed: true });
+  });
+
+  it("rejects avatar URLs from a different Supabase project", async () => {
+    const { DELETE } = await import("@/app/api/profile/avatar/route");
+
+    const response = await DELETE(
+      new Request("http://localhost/api/profile/avatar", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          avatarUrl:
+            "https://other-project.supabase.co/storage/v1/object/public/avatars/user-1/avatar.png",
+        }),
+      }),
+    );
+
+    expect(remove).not.toHaveBeenCalled();
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "That avatar does not belong to this account.",
+    });
   });
 });
