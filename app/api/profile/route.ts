@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getSupabaseBrowserEnv } from "@/lib/supabase/config";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 function sanitizeDisplayName(value: unknown) {
@@ -33,8 +34,18 @@ function sanitizeAvatarUrl(value: unknown) {
 
   try {
     const url = new URL(trimmed);
+    const env = getSupabaseBrowserEnv();
 
     if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return null;
+    }
+
+    if (
+      !env ||
+      !url.toString().startsWith(
+        `${env.url}/storage/v1/object/public/avatars/`,
+      )
+    ) {
       return null;
     }
 

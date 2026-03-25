@@ -51,13 +51,9 @@ describe("HomePage", () => {
     expect(
       screen.getByText("Simple lessons. Clear explanations. Step by step."),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Start free" })).toHaveAttribute(
-      "href",
-      "/learn",
-    );
-    expect(
-      screen.getByRole("link", { name: "View curriculum" }),
-    ).toHaveAttribute("href", "/#curriculum");
+    expect(screen.getByText("Clear lessons")).toBeInTheDocument();
+    expect(screen.getByText("Safe guidance")).toBeInTheDocument();
+    expect(screen.getByText("Built for beginners")).toBeInTheDocument();
   });
 
   it("keeps the conversation idle when the prompt is empty", () => {

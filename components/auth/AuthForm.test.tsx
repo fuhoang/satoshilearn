@@ -161,5 +161,52 @@ describe("AuthForm", () => {
         provider: "google",
       });
     });
+
+    expect(
+      screen.getByText("Redirecting to Google..."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Log in" })).not.toBeDisabled();
+  });
+
+  it("shows the OAuth error and re-enables the form when Google sign-in fails", async () => {
+    signInWithOAuth.mockResolvedValue({
+      error: { message: "Provider is not configured" },
+    });
+    createBrowserSupabaseClient.mockReturnValue({
+      auth: {
+        signInWithOAuth,
+      },
+    });
+
+    render(<AuthForm mode="login" nextPath="/learn" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+
+    expect(
+      await screen.findByText("Provider is not configured"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Log in" })).not.toBeDisabled();
+  });
+
+  it("sanitizes unsafe next paths before starting Google OAuth", async () => {
+    signInWithOAuth.mockResolvedValue({ error: null });
+    createBrowserSupabaseClient.mockReturnValue({
+      auth: {
+        signInWithOAuth,
+      },
+    });
+
+    render(<AuthForm mode="login" nextPath="https://evil.example" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+
+    await waitFor(() => {
+      expect(signInWithOAuth).toHaveBeenCalledWith({
+        options: {
+          redirectTo: "http://localhost:3000/auth/callback?next=%2Flearn",
+        },
+        provider: "google",
+      });
+    });
   });
 });

@@ -29,7 +29,8 @@ async function writeCookieProgress(progress: typeof EMPTY_LESSON_PROGRESS) {
   });
 
   response.cookies.set(PROGRESS_COOKIE, JSON.stringify(progress), {
-    httpOnly: false,
+    // The fallback cookie is API-owned state, not client-owned application state.
+    httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
@@ -96,14 +97,29 @@ async function writeSupabaseProgress(progress: typeof EMPTY_LESSON_PROGRESS) {
   }
 
   const nextSlugs = progress.completedLessonSlugs;
-  const deleteQuery = nextSlugs.length
+  const { data: existingRows, error: existingError } = await supabase
+    .from("lesson_progress")
+    .select("lesson_slug")
+    .eq("user_id", user.id);
+
+  if (existingError) {
+    return null;
+  }
+
+  const staleSlugs = existingRows
+    .map((row) => row.lesson_slug)
+    .filter((slug) => !nextSlugs.includes(slug));
+
+  const deleteQuery = staleSlugs.length
     ? supabase
         .from("lesson_progress")
         .delete()
         .eq("user_id", user.id)
-        .not("lesson_slug", "in", `(${nextSlugs.map((slug) => `"${slug}"`).join(",")})`)
-    : supabase.from("lesson_progress").delete().eq("user_id", user.id);
-  const { error: deleteError } = await deleteQuery;
+        .in("lesson_slug", staleSlugs)
+    : null;
+  const { error: deleteError } = deleteQuery
+    ? await deleteQuery
+    : { error: null };
 
   if (deleteError) {
     return null;
@@ -135,6 +151,16 @@ async function writeSupabaseProgress(progress: typeof EMPTY_LESSON_PROGRESS) {
   };
 }
 
+async function readWritableBaseProgress() {
+  const stored = await readSupabaseProgress();
+
+  if (stored?.persisted) {
+    return stored.progress;
+  }
+
+  return readCookieProgress();
+}
+
 export async function GET() {
   const stored = await readSupabaseProgress();
 
@@ -150,7 +176,7 @@ export async function POST(request: Request) {
     | { slug?: string; complete?: boolean }
     | { completedLessonSlugs?: string[] };
 
-  const current = await readCookieProgress();
+  const current = await readWritableBaseProgress();
   const hasCompletedLessonSlugs =
     "completedLessonSlugs" in body &&
     Array.isArray(body.completedLessonSlugs);
@@ -159,11 +185,9 @@ export async function POST(request: Request) {
     hasCompletedLessonSlugs
       ? sanitizeLessonProgress(body)
       : "slug" in body && body.slug && body.complete
-        ? {
-            completedLessonSlugs: Array.from(
-              new Set([...current.completedLessonSlugs, body.slug]),
-            ),
-          }
+        ? sanitizeLessonProgress({
+            completedLessonSlugs: [...current.completedLessonSlugs, body.slug],
+          })
         : current;
 
   const supabaseWrite = await writeSupabaseProgress(next);

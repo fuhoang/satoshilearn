@@ -37,6 +37,7 @@ describe("progress route", () => {
 
     expect(setCookie).toContain("satoshilearn-progress=");
     expect(setCookie).toContain("what-is-money");
+    expect(setCookie).toContain("HttpOnly");
 
     cookieState.set(
       "satoshilearn-progress",
@@ -56,7 +57,13 @@ describe("progress route", () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        completedLessonSlugs: ["what-is-money", "", "what-is-money", 12],
+        completedLessonSlugs: [
+          "what-is-money",
+          "",
+          "what-is-money",
+          "not-a-real-lesson",
+          12,
+        ],
       }),
     });
 
@@ -64,5 +71,20 @@ describe("progress route", () => {
     const payload = await response.json();
 
     expect(payload.completedLessonSlugs).toEqual(["what-is-money"]);
+  });
+
+  it("drops unknown slugs in single-lesson updates", async () => {
+    const request = new Request("http://localhost/api/progress", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ slug: "not-a-real-lesson", complete: true }),
+    });
+
+    const response = await POST(request);
+    const payload = await response.json();
+
+    expect(payload.completedLessonSlugs).toEqual([]);
   });
 });

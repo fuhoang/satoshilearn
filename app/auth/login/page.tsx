@@ -1,4 +1,5 @@
 import { AuthForm } from "@/components/auth/AuthForm";
+import { sanitizeNextPath } from "@/lib/auth-redirects";
 
 export default async function LoginPage({
   searchParams,
@@ -6,7 +7,7 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const params = await searchParams;
-  const nextPath = params.next || "/learn";
+  const nextPath = sanitizeNextPath(params.next);
 
   return (
     <main className="min-h-screen bg-zinc-950 px-6 py-16 text-white">

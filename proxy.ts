@@ -11,6 +11,7 @@ export function proxy(request: NextRequest) {
 
 async function handleProxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const isGetRequest = request.method === "GET";
   let response = NextResponse.next({
     request,
   });
@@ -29,7 +30,7 @@ async function handleProxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isAuthRoute(pathname) && sessionState.user) {
+  if (isGetRequest && isAuthRoute(pathname) && sessionState.user) {
     return NextResponse.redirect(new URL("/learn", request.url));
   }
 

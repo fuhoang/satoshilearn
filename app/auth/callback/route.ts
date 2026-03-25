@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 
+import { sanitizeNextPath } from "@/lib/auth-redirects";
 import { syncProfileForUser } from "@/lib/profile";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
-  const nextPath = url.searchParams.get("next") || "/learn";
+  const nextPath = sanitizeNextPath(url.searchParams.get("next"));
   const redirectUrl = new URL(nextPath, url.origin);
   const supabase = await createServerSupabaseClient();
 
