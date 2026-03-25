@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { Route } from "next";
 import Link from "next/link";
 
 import { ChatWindow } from "@/components/chat/ChatWindow";
@@ -37,7 +38,7 @@ const MODULE_ACCENTS = [
 const MODULES = moduleConfig.slice(0, 3).map((module, index) => ({
   ...module,
   cta: "Open module",
-  href: `/learn/module/${module.slug}`,
+  href: `/learn/module/${module.slug}` as Route,
   ...MODULE_ACCENTS[index % MODULE_ACCENTS.length],
 }));
 
