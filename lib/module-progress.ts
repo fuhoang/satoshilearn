@@ -33,3 +33,31 @@ export function getNextModuleLesson(
     ) ?? module.lessons[module.lessons.length - 1]
   );
 }
+
+export function getModuleCompletionPercentage(
+  module: ModuleMeta,
+  completedLessonSlugs: string[],
+) {
+  if (module.lessons.length === 0) {
+    return 0;
+  }
+
+  return Math.round(
+    (getCompletedModuleLessonCount(module, completedLessonSlugs) /
+      module.lessons.length) *
+      100,
+  );
+}
+
+export function getCurrentModule(
+  modules: ModuleMeta[],
+  completedLessonSlugs: string[],
+) {
+  return (
+    modules.find(
+      (module) =>
+        getCompletedModuleLessonCount(module, completedLessonSlugs) <
+        module.lessons.length,
+    ) ?? modules[modules.length - 1] ?? null
+  );
+}

@@ -1,5 +1,7 @@
 import {
   getCompletedModuleLessonCount,
+  getCurrentModule,
+  getModuleCompletionPercentage,
   getNextModuleLesson,
   isModuleLessonUnlocked,
 } from "@/lib/module-progress";
@@ -72,5 +74,41 @@ describe("module progress helpers", () => {
         "why-does-bitcoin-matter",
       ]).slug,
     ).toBe("why-does-bitcoin-matter");
+  });
+
+  it("calculates module completion percentage", () => {
+    expect(getModuleCompletionPercentage(moduleData, [])).toBe(0);
+    expect(getModuleCompletionPercentage(moduleData, ["what-is-money"])).toBe(33);
+    expect(
+      getModuleCompletionPercentage(moduleData, [
+        "what-is-money",
+        "what-is-bitcoin",
+        "why-does-bitcoin-matter",
+      ]),
+    ).toBe(100);
+  });
+
+  it("returns the first incomplete module as the current module", () => {
+    const secondModule: ModuleMeta = {
+      ...moduleData,
+      slug: "core-concepts",
+      title: "Core Concepts",
+      order: 2,
+      lessons: moduleData.lessons.map((lesson, index) => ({
+        ...lesson,
+        slug: `core-${index + 1}`,
+        title: `Core ${index + 1}`,
+      })),
+    };
+
+    expect(getCurrentModule([moduleData, secondModule], [])?.slug).toBe(
+      "foundations",
+    );
+    expect(
+      getCurrentModule(
+        [moduleData, secondModule],
+        moduleData.lessons.map((lesson) => lesson.slug),
+      )?.slug,
+    ).toBe("core-concepts");
   });
 });
