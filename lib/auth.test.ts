@@ -16,6 +16,8 @@ describe("auth route helpers", () => {
   it("detects auth routes", () => {
     expect(isAuthRoute("/auth/login")).toBe(true);
     expect(isAuthRoute("/auth/register")).toBe(true);
+    expect(isAuthRoute("/auth/forgot-password")).toBe(true);
+    expect(isAuthRoute("/auth/reset-password")).toBe(false);
     expect(isAuthRoute("/auth/callback")).toBe(false);
   });
 });

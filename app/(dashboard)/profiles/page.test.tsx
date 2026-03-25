@@ -3,9 +3,14 @@ import { render, screen } from "@testing-library/react";
 import ProfilesPage from "@/app/(dashboard)/profiles/page";
 
 const getOrCreateProfile = vi.fn();
+const createServerSupabaseClient = vi.fn();
 
 vi.mock("@/lib/profile", () => ({
   getOrCreateProfile: () => getOrCreateProfile(),
+}));
+
+vi.mock("@/lib/supabase/server", () => ({
+  createServerSupabaseClient: () => createServerSupabaseClient(),
 }));
 
 vi.mock("@/components/profile/ProfileDetailsForm", () => ({
@@ -21,8 +26,34 @@ vi.mock("@/components/profile/ProfileDetailsForm", () => ({
   ),
 }));
 
+vi.mock("@/components/profile/AccountSecurityForm", () => ({
+  AccountSecurityForm: ({
+    email,
+    isEmailConfirmed,
+  }: {
+    email: string | null;
+    isEmailConfirmed: boolean;
+  }) => (
+    <div data-testid="account-security-form">
+      {email ?? "No email"}
+      {isEmailConfirmed ? "confirmed" : "pending"}
+    </div>
+  ),
+}));
+
 describe("profiles page route", () => {
   it("renders the consolidated profile summary and edit form", async () => {
+    createServerSupabaseClient.mockResolvedValue({
+      auth: {
+        getUser: async () => ({
+          data: {
+            user: {
+              email_confirmed_at: "2026-03-24T00:00:00.000Z",
+            },
+          },
+        }),
+      },
+    });
     getOrCreateProfile.mockResolvedValue({
       id: "user-1",
       email: "user@example.com",
@@ -45,5 +76,6 @@ describe("profiles page route", () => {
       screen.getByText("Learning Bitcoin from first principles."),
     ).toBeInTheDocument();
     expect(screen.getByTestId("profile-details-form")).toBeInTheDocument();
+    expect(screen.getByTestId("account-security-form")).toBeInTheDocument();
   });
 });

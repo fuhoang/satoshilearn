@@ -5,6 +5,7 @@ import { AuthForm } from "@/components/auth/AuthForm";
 
 const signInWithPassword = vi.fn();
 const signInWithOAuth = vi.fn();
+const resend = vi.fn();
 const signUp = vi.fn();
 const createBrowserSupabaseClient = vi.fn();
 const hasSupabaseEnv = vi.fn();
@@ -39,6 +40,7 @@ describe("AuthForm", () => {
   beforeEach(() => {
     signInWithPassword.mockReset();
     signInWithOAuth.mockReset();
+    resend.mockReset();
     signUp.mockReset();
     createBrowserSupabaseClient.mockReset();
     hasSupabaseEnv.mockReset();
@@ -81,6 +83,7 @@ describe("AuthForm", () => {
     );
     createBrowserSupabaseClient.mockReturnValue({
       auth: {
+        resend,
         signInWithOAuth,
         signInWithPassword,
       },
@@ -108,6 +111,10 @@ describe("AuthForm", () => {
       method: "POST",
     });
     expect(window.location.assign).toHaveBeenCalledWith("/learn");
+    expect(screen.getByRole("link", { name: "Forgot password?" })).toHaveAttribute(
+      "href",
+      "/auth/forgot-password",
+    );
   });
 
   it("shows a success message after signup without a session", async () => {
@@ -117,6 +124,7 @@ describe("AuthForm", () => {
     });
     createBrowserSupabaseClient.mockReturnValue({
       auth: {
+        resend,
         signInWithOAuth,
         signUp,
       },
@@ -139,12 +147,16 @@ describe("AuthForm", () => {
     expect(
       screen.getByText(/Check your email to confirm your address/i),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Resend confirmation email" }),
+    ).toBeInTheDocument();
   });
 
   it("starts Google OAuth with the auth callback redirect", async () => {
     signInWithOAuth.mockResolvedValue({ error: null });
     createBrowserSupabaseClient.mockReturnValue({
       auth: {
+        resend,
         signInWithOAuth,
       },
     });
@@ -174,6 +186,7 @@ describe("AuthForm", () => {
     });
     createBrowserSupabaseClient.mockReturnValue({
       auth: {
+        resend,
         signInWithOAuth,
       },
     });
@@ -192,6 +205,7 @@ describe("AuthForm", () => {
     signInWithOAuth.mockResolvedValue({ error: null });
     createBrowserSupabaseClient.mockReturnValue({
       auth: {
+        resend,
         signInWithOAuth,
       },
     });
@@ -208,5 +222,116 @@ describe("AuthForm", () => {
         provider: "google",
       });
     });
+  });
+
+  it("shows resend confirmation after an unconfirmed login attempt", async () => {
+    signInWithPassword.mockResolvedValue({
+      error: { message: "Email not confirmed" },
+    });
+    createBrowserSupabaseClient.mockReturnValue({
+      auth: {
+        resend,
+        signInWithOAuth,
+        signInWithPassword,
+      },
+    });
+
+    render(<AuthForm mode="login" nextPath="/learn" />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "user@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Log in" }));
+
+    expect(await screen.findByText("Email not confirmed")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Resend confirmation email" }),
+    ).toBeInTheDocument();
+  });
+
+  it("resends the confirmation email from the auth form", async () => {
+    signUp.mockResolvedValue({
+      data: { session: null },
+      error: null,
+    });
+    resend.mockResolvedValue({ error: null });
+    createBrowserSupabaseClient.mockReturnValue({
+      auth: {
+        resend,
+        signInWithOAuth,
+        signUp,
+      },
+    });
+
+    render(<AuthForm mode="register" nextPath="/learn" />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "user@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(
+      await screen.findByRole("button", { name: "Resend confirmation email" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Resend confirmation email" }));
+
+    await waitFor(() => {
+      expect(resend).toHaveBeenCalledWith({
+        email: "user@example.com",
+        options: {
+          emailRedirectTo: "http://localhost:3000/auth/callback?next=%2Flearn",
+        },
+        type: "signup",
+      });
+    });
+
+    expect(await screen.findByText("Confirmation email sent.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Try again in 60s" })).toBeDisabled();
+  });
+
+  it("shows a friendly rate-limit message when resend is throttled", async () => {
+    signUp.mockResolvedValue({
+      data: { session: null },
+      error: null,
+    });
+    resend.mockResolvedValue({
+      error: { message: "email rate limit exceeded" },
+    });
+    createBrowserSupabaseClient.mockReturnValue({
+      auth: {
+        resend,
+        signInWithOAuth,
+        signUp,
+      },
+    });
+
+    render(<AuthForm mode="register" nextPath="/learn" />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "user@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(
+      await screen.findByRole("button", { name: "Resend confirmation email" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Resend confirmation email" }));
+
+    expect(
+      await screen.findByText(
+        "Too many email requests. Please wait a few minutes before trying again.",
+      ),
+    ).toBeInTheDocument();
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/Button";
@@ -12,6 +12,14 @@ type AuthFormProps = {
   mode: "login" | "register";
   nextPath: string;
 };
+
+function getFriendlyAuthErrorMessage(message: string) {
+  if (/email rate limit exceeded/i.test(message)) {
+    return "Too many email requests. Please wait a few minutes before trying again.";
+  }
+
+  return message;
+}
 
 async function syncAuthenticatedProfile() {
   try {
@@ -32,6 +40,23 @@ export function AuthForm({ mode, nextPath }: AuthFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResendingConfirmation, setIsResendingConfirmation] = useState(false);
+  const [showResendConfirmation, setShowResendConfirmation] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setResendCooldown((current) => Math.max(0, current - 1));
+    }, 1000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [resendCooldown]);
 
   async function handleGoogleAuth() {
     if (!supabase) {
@@ -43,6 +68,7 @@ export function AuthForm({ mode, nextPath }: AuthFormProps) {
 
     setError(null);
     setMessage(null);
+    setShowResendConfirmation(false);
     setIsSubmitting(true);
 
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
@@ -84,6 +110,7 @@ export function AuthForm({ mode, nextPath }: AuthFormProps) {
 
       if (loginError) {
         setError(loginError.message);
+        setShowResendConfirmation(/confirm/i.test(loginError.message));
         setIsSubmitting(false);
         return;
       }
@@ -116,7 +143,49 @@ export function AuthForm({ mode, nextPath }: AuthFormProps) {
     setMessage(
       "Account created. Check your email to confirm your address before logging in.",
     );
+    setShowResendConfirmation(true);
     setIsSubmitting(false);
+  }
+
+  async function handleResendConfirmation() {
+    if (!supabase) {
+      setError(
+        "Supabase is not configured yet. Add the public URL and anon key to your environment first.",
+      );
+      return;
+    }
+
+    if (!email) {
+      setError("Enter your email first so we know where to resend the confirmation.");
+      return;
+    }
+
+    if (resendCooldown > 0) {
+      return;
+    }
+
+    setError(null);
+    setMessage(null);
+    setIsResendingConfirmation(true);
+
+    const { error: resendError } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: {
+        emailRedirectTo: buildAuthCallbackUrl(window.location.origin, safeNextPath),
+      },
+    });
+
+    if (resendError) {
+      setError(getFriendlyAuthErrorMessage(resendError.message));
+      setIsResendingConfirmation(false);
+      return;
+    }
+
+    setMessage("Confirmation email sent.");
+    setShowResendConfirmation(true);
+    setResendCooldown(60);
+    setIsResendingConfirmation(false);
   }
 
   return (
@@ -206,6 +275,17 @@ export function AuthForm({ mode, nextPath }: AuthFormProps) {
           />
         </label>
 
+        {mode === "login" ? (
+          <div className="flex justify-end">
+            <Link
+              className="text-sm font-medium text-zinc-400 transition hover:text-white"
+              href="/auth/forgot-password"
+            >
+              Forgot password?
+            </Link>
+          </div>
+        ) : null}
+
         {error ? (
           <p className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
             {error}
@@ -231,6 +311,22 @@ export function AuthForm({ mode, nextPath }: AuthFormProps) {
               ? "Log in"
               : "Create account"}
         </Button>
+
+        {showResendConfirmation ? (
+          <Button
+            className="w-full border border-white/10 bg-white text-black hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+            disabled={isResendingConfirmation || resendCooldown > 0}
+            onClick={handleResendConfirmation}
+            type="button"
+            variant="secondary"
+          >
+            {isResendingConfirmation
+              ? "Sending confirmation..."
+              : resendCooldown > 0
+                ? `Try again in ${resendCooldown}s`
+                : "Resend confirmation email"}
+          </Button>
+        ) : null}
       </form>
 
       <p className="mt-6 text-sm text-zinc-500">

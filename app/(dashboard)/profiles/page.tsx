@@ -1,8 +1,14 @@
+import { AccountSecurityForm } from "@/components/profile/AccountSecurityForm";
 import { ProfileDetailsForm } from "@/components/profile/ProfileDetailsForm";
 import { getOrCreateProfile } from "@/lib/profile";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export default async function ProfilesPage() {
   const profile = await getOrCreateProfile();
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
 
   return (
     <main className="min-h-screen bg-zinc-950 px-6 py-12 text-white">
@@ -97,6 +103,10 @@ export default async function ProfilesPage() {
         </section>
 
         <ProfileDetailsForm profile={profile} />
+        <AccountSecurityForm
+          email={profile.email}
+          isEmailConfirmed={Boolean(user?.email_confirmed_at)}
+        />
 
         <section className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8">
           <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
