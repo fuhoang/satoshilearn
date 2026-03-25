@@ -12,6 +12,12 @@ type AuthFormProps = {
   nextPath: string;
 };
 
+function buildAuthCallbackUrl(nextPath: string) {
+  const callbackUrl = new URL("/auth/callback", window.location.origin);
+  callbackUrl.searchParams.set("next", nextPath);
+  return callbackUrl.toString();
+}
+
 async function syncAuthenticatedProfile() {
   try {
     await fetch("/api/profile/sync", {
@@ -43,20 +49,21 @@ export function AuthForm({ mode, nextPath }: AuthFormProps) {
     setMessage(null);
     setIsSubmitting(true);
 
-    const oauthRedirectTo = new URL("/auth/callback", window.location.origin);
-    oauthRedirectTo.searchParams.set("next", nextPath);
-
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: oauthRedirectTo.toString(),
+        redirectTo: buildAuthCallbackUrl(nextPath),
       },
     });
 
     if (oauthError) {
       setError(oauthError.message);
       setIsSubmitting(false);
+      return;
     }
+
+    setMessage("Redirecting to Google...");
+    setIsSubmitting(false);
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -90,14 +97,11 @@ export function AuthForm({ mode, nextPath }: AuthFormProps) {
       return;
     }
 
-    const emailRedirectTo = new URL("/auth/callback", window.location.origin);
-    emailRedirectTo.searchParams.set("next", nextPath);
-
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: emailRedirectTo.toString(),
+        emailRedirectTo: buildAuthCallbackUrl(nextPath),
       },
     });
 
