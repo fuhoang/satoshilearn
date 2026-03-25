@@ -31,6 +31,34 @@ export function AuthForm({ mode, nextPath }: AuthFormProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  async function handleGoogleAuth() {
+    if (!supabase) {
+      setError(
+        "Supabase is not configured yet. Add the public URL and anon key to your environment first.",
+      );
+      return;
+    }
+
+    setError(null);
+    setMessage(null);
+    setIsSubmitting(true);
+
+    const oauthRedirectTo = new URL("/auth/callback", window.location.origin);
+    oauthRedirectTo.searchParams.set("next", nextPath);
+
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: oauthRedirectTo.toString(),
+      },
+    });
+
+    if (oauthError) {
+      setError(oauthError.message);
+      setIsSubmitting(false);
+    }
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -112,7 +140,47 @@ export function AuthForm({ mode, nextPath }: AuthFormProps) {
         </div>
       ) : null}
 
-      <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
+      <div className="mt-8">
+        <Button
+          className="w-full !border-[#dadce0] !bg-white !text-[#1a73e8] shadow-none hover:!bg-[#f8f9fa] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+          disabled={isSubmitting}
+          onClick={handleGoogleAuth}
+          type="button"
+          variant="secondary"
+        >
+          <svg
+            aria-hidden="true"
+            className="mr-2 h-4 w-4"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M21.805 12.23c0-.79-.07-1.55-.2-2.28H12v4.32h5.49a4.7 4.7 0 0 1-2.04 3.08v2.56h3.3c1.93-1.78 3.055-4.4 3.055-7.68Z"
+              fill="#4285F4"
+            />
+            <path
+              d="M12 22c2.76 0 5.07-.91 6.76-2.47l-3.3-2.56c-.92.62-2.1.99-3.46.99-2.66 0-4.91-1.8-5.72-4.22H2.87v2.64A10 10 0 0 0 12 22Z"
+              fill="#34A853"
+            />
+            <path
+              d="M6.28 13.74A5.98 5.98 0 0 1 5.96 12c0-.6.11-1.18.32-1.74V7.62H2.87A10 10 0 0 0 2 12c0 1.61.39 3.13 1.08 4.38l3.2-2.64Z"
+              fill="#FBBC05"
+            />
+            <path
+              d="M12 6.04c1.5 0 2.84.51 3.9 1.5l2.92-2.92C17.06 2.98 14.75 2 12 2a10 10 0 0 0-9.13 5.62l3.41 2.64C7.09 7.84 9.34 6.04 12 6.04Z"
+              fill="#EA4335"
+            />
+          </svg>
+          Continue with Google
+        </Button>
+      </div>
+
+      <div className="mt-6 flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-zinc-500">
+        <span className="h-px flex-1 bg-white/10" />
+        <span>or use email</span>
+        <span className="h-px flex-1 bg-white/10" />
+      </div>
+
+      <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
         <label className="block">
           <span className="text-sm text-zinc-400">Email</span>
           <input
