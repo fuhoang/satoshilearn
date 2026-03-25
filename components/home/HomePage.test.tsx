@@ -97,9 +97,9 @@ describe("HomePage", () => {
   it("renders the curriculum modules and pricing plans", () => {
     render(<HomePage />);
 
-    expect(screen.getByText("Bitcoin Basics")).toBeInTheDocument();
-    expect(screen.getByText("Wallets & Security")).toBeInTheDocument();
-    expect(screen.getByText("Transactions & Mining")).toBeInTheDocument();
+    expect(screen.getByText("Foundations")).toBeInTheDocument();
+    expect(screen.getByText("Core Concepts")).toBeInTheDocument();
+    expect(screen.getByText("Wallets & Ownership")).toBeInTheDocument();
     expect(screen.getByText("Monthly plan")).toBeInTheDocument();
     expect(screen.getByText("Yearly plan")).toBeInTheDocument();
   });

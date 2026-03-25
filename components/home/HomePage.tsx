@@ -4,37 +4,42 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 import { ChatWindow } from "@/components/chat/ChatWindow";
+import { moduleConfig } from "@/content/config";
 import { SoftAurora } from "@/components/home/SoftAurora";
 
-const MODULES = [
+const MODULE_ACCENTS = [
   {
-    title: "Bitcoin Basics",
-    description: "Understand what Bitcoin is, why it exists, and why it matters.",
-    eyebrow: "Start here",
     accent: "from-amber-400/25 via-orange-500/10 to-transparent",
     border: "border-amber-400/25",
-    cta: "Explore basics",
-    href: "/learn",
   },
   {
-    title: "Wallets & Security",
-    description: "Learn self-custody, scams, and safe first steps.",
-    eyebrow: "Stay safe",
     accent: "from-emerald-400/25 via-cyan-500/10 to-transparent",
     border: "border-emerald-400/25",
-    cta: "Learn security",
-    href: "/learn",
   },
   {
-    title: "Transactions & Mining",
-    description: "Learn how Bitcoin moves and how the network stays secure.",
-    eyebrow: "Go deeper",
     accent: "from-sky-400/25 via-indigo-500/10 to-transparent",
     border: "border-sky-400/25",
-    cta: "See the network",
-    href: "/learn",
+  },
+  {
+    accent: "from-rose-400/25 via-red-500/10 to-transparent",
+    border: "border-rose-400/25",
+  },
+  {
+    accent: "from-violet-400/25 via-fuchsia-500/10 to-transparent",
+    border: "border-violet-400/25",
+  },
+  {
+    accent: "from-lime-400/25 via-green-500/10 to-transparent",
+    border: "border-lime-400/25",
   },
 ] as const;
+
+const MODULES = moduleConfig.slice(0, 3).map((module, index) => ({
+  ...module,
+  cta: "Open module",
+  href: `/learn/module/${module.slug}`,
+  ...MODULE_ACCENTS[index % MODULE_ACCENTS.length],
+}));
 
 const PRICING_PLANS = [
   {
@@ -205,10 +210,10 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="mt-10 grid gap-4 md:grid-cols-3">
-            {MODULES.map((module, index) => (
+          <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {MODULES.map((module) => (
               <div
-                key={module.title}
+                key={module.slug}
                 className={`group relative flex h-full overflow-hidden rounded-[1.75rem] border bg-black p-6 text-left transition-transform duration-200 hover:-translate-y-1 ${module.border}`}
               >
                 <div
@@ -216,9 +221,11 @@ export default function HomePage() {
                 />
                 <div className="relative flex h-full flex-1 flex-col">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-zinc-400">Module 0{index + 1}</p>
+                    <p className="text-sm text-zinc-400">
+                      Module {String(module.order).padStart(2, "0")}
+                    </p>
                     <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-zinc-300">
-                      {module.eyebrow}
+                      {module.lessons.length} lessons
                     </span>
                   </div>
                   <h3 className="mt-4 text-xl font-semibold text-white">
