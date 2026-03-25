@@ -13,7 +13,8 @@ export type PublicGuide = {
     | "bitcoin-for-beginners"
     | "crypto-wallet-basics"
     | "what-is-bitcoin"
-    | "how-crypto-transactions-work";
+    | "how-crypto-transactions-work"
+    | "crypto-security-basics";
   intro: string;
   ogTitle: string;
   ogSubtitle: string;
@@ -263,6 +264,54 @@ export const publicGuides: PublicGuide[] = [
         question: "Does this guide only apply to Bitcoin?",
         answer:
           "The live examples in Blockwise are Bitcoin-first, but the basic mental model of signing, broadcasting, and confirmation helps across crypto networks.",
+      },
+    ],
+  },
+  {
+    id: "crypto-security-basics",
+    href: "/crypto-security-basics",
+    eyebrow: "Security basics",
+    title: "Crypto security basics for beginners",
+    summary:
+      "Learn the safety habits that matter most early on: seed phrase handling, phishing awareness, wallet checks, and slowing down before mistakes.",
+    description:
+      "Learn crypto security basics in Blockwise, including seed phrase handling, phishing awareness, wallet verification, and safer beginner habits.",
+    intro:
+      "Security is where many beginners feel overwhelmed, but the fundamentals are simpler than they look. The goal is not paranoia. It is learning a few habits that reduce the biggest avoidable mistakes before you move real value.",
+    ogTitle: "Crypto security basics.",
+    ogSubtitle: "Seed phrases, phishing, wallet checks, and safer habits for beginners.",
+    sections: [
+      {
+        title: "Protect access before anything else",
+        body:
+          "Good security starts with understanding what gives access: keys, seed phrases, devices, and recovery paths. Once you know what matters, the rest gets clearer.",
+      },
+      {
+        title: "Slow down around addresses and links",
+        body:
+          "A large share of beginner mistakes come from rushing. Verifying addresses, links, and app sources is boring by design, and that is exactly why it works.",
+      },
+      {
+        title: "Treat self-custody like a real responsibility",
+        body:
+          "The main tradeoff in crypto security is control versus convenience. Beginners do better when they understand that tradeoff before copying setups from the internet.",
+      },
+    ],
+    faq: [
+      {
+        question: "What is the first crypto security habit to learn?",
+        answer:
+          "Understand what your wallet, keys, and recovery phrase actually control. That makes almost every other security decision easier.",
+      },
+      {
+        question: "Do beginners need perfect security immediately?",
+        answer:
+          "No. They need strong fundamentals first: verify addresses, protect recovery information, avoid rushing, and understand custody tradeoffs.",
+      },
+      {
+        question: "Is this guide only about Bitcoin security?",
+        answer:
+          "The live examples in Blockwise start with Bitcoin, but these core safety habits apply broadly across crypto.",
       },
     ],
   },

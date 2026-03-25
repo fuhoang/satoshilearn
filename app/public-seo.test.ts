@@ -1,4 +1,5 @@
 import { metadata as bitcoinForBeginnersMetadata } from "@/app/(marketing)/bitcoin-for-beginners/page";
+import { metadata as securityMetadata } from "@/app/(marketing)/crypto-security-basics/page";
 import { metadata as walletBasicsMetadata } from "@/app/(marketing)/crypto-wallet-basics/page";
 import { metadata as transactionsMetadata } from "@/app/(marketing)/how-crypto-transactions-work/page";
 import { metadata as learnCryptoMetadata } from "@/app/(marketing)/learn-crypto/page";
@@ -31,6 +32,10 @@ describe("public metadata", () => {
       "http://localhost:3000/how-crypto-transactions-work",
     );
     expect(transactionsMetadata.description).toContain("crypto transactions work");
+    expect(securityMetadata.alternates?.canonical).toBe(
+      "http://localhost:3000/crypto-security-basics",
+    );
+    expect(securityMetadata.description).toContain("crypto security basics");
   });
 
   it("uses dedicated social images on public marketing pages", () => {
@@ -64,6 +69,14 @@ describe("public metadata", () => {
         width: 1200,
         height: 630,
         alt: "How crypto transactions work",
+      },
+    ]);
+    expect(securityMetadata.openGraph?.images).toEqual([
+      {
+        url: "http://localhost:3000/crypto-security-basics/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Crypto security basics",
       },
     ]);
   });
