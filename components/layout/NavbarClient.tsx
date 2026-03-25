@@ -12,6 +12,7 @@ type NavLink = {
 };
 
 type NavbarClientProps = {
+  avatarUrl: string | null;
   isAuthenticated: boolean;
   userLabel: string | null;
 };
@@ -25,6 +26,7 @@ const BRAND_FONT_STACK =
   '"Bungee", Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif';
 
 export function NavbarClient({
+  avatarUrl,
   isAuthenticated,
   userLabel,
 }: NavbarClientProps) {
@@ -136,16 +138,28 @@ export function NavbarClient({
         </Link>
         <div className="hidden items-center justify-center gap-3 md:flex md:justify-self-end">
           {isAuthenticated ? (
-            <div className="relative">
+            <div className="relative flex items-center gap-3">
+              <span className="rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-orange-300">
+                Free plan
+              </span>
               <button
                 aria-expanded={isProfileMenuOpen}
                 aria-haspopup="menu"
                 aria-label="Open profile menu"
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-sm font-semibold text-white transition hover:bg-white/10"
+                className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white/5 text-sm font-semibold text-white transition hover:bg-white/10"
                 onClick={() => setIsProfileMenuOpen((current) => !current)}
                 type="button"
               >
-                {profileInitial}
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    alt="Profile avatar"
+                    className="h-full w-full object-cover"
+                    src={avatarUrl}
+                  />
+                ) : (
+                  profileInitial
+                )}
               </button>
               {isProfileMenuOpen ? (
                 <div className="absolute right-0 top-full mt-3 w-64 rounded-3xl border border-white/10 bg-zinc-950/95 p-4 shadow-[0_20px_80px_rgba(0,0,0,0.45)] backdrop-blur">
@@ -235,6 +249,9 @@ export function NavbarClient({
                       {userLabel}
                     </p>
                   ) : null}
+                  <p className="rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-orange-300">
+                    Free plan
+                  </p>
                   <Link href="/profiles" onClick={() => setIsMenuOpen(false)}>
                     <Button className="w-full" variant="secondary">
                       Profile

@@ -68,7 +68,9 @@ export function DashboardOverview({
   ]
     .sort((left, right) => Date.parse(right.timestamp) - Date.parse(left.timestamp))
     .slice(0, 5);
-  const recentQuizAttempts = quizAttempts.slice(0, 4);
+  const recentQuizAttempts = [...quizAttempts]
+    .sort((left, right) => Date.parse(right.attemptedAt) - Date.parse(left.attemptedAt))
+    .slice(0, 4);
 
   return (
     <div className="space-y-8">
@@ -88,6 +90,10 @@ export function DashboardOverview({
           Pick up your next lesson, monitor module progress, and keep your account
           details in one place.
         </p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <StatusPill label={accountStatus.planLabel} tone="accent" />
+          <StatusPill label={accountStatus.billingStatus} tone="neutral" />
+        </div>
         <div className="mt-8 grid gap-4 md:grid-cols-4">
           <SummaryCard
             label="Completed lessons"
@@ -115,7 +121,7 @@ export function DashboardOverview({
           <SummaryCard
             label="Account"
             value={profileLabel}
-            helper="Free access for now"
+            helper={`${accountStatus.headline} · ${accountStatus.billingStatus}`}
           />
         </div>
         <div className="mt-8 space-y-3">

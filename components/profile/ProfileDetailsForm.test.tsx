@@ -141,7 +141,11 @@ describe("ProfileDetailsForm", () => {
     fireEvent.change(screen.getByLabelText("Avatar image"), {
       target: { files: [file] },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Save profile" }));
+    expect(screen.getByText(/Pending upload/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Upload avatar and save" }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Upload avatar and save" }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenNthCalledWith(
@@ -169,11 +173,54 @@ describe("ProfileDetailsForm", () => {
     );
   });
 
-  it("removes the current avatar before saving the profile", async () => {
+  it("cleans up a newly uploaded avatar if the profile save fails", async () => {
     fetchMock
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ removed: true }), { status: 200 }),
+        new Response(
+          JSON.stringify({
+            avatarUrl:
+              "https://project.supabase.co/storage/v1/object/public/avatars/user-1/avatar.png",
+          }),
+          { status: 200 },
+        ),
       )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: "Unable to update your profile right now.",
+          }),
+          { status: 500 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ removed: true }), { status: 200 }),
+      );
+
+    render(<ProfileDetailsForm profile={profile} />);
+
+    const file = new File(["avatar"], "avatar.png", { type: "image/png" });
+    fireEvent.change(screen.getByLabelText("Avatar image"), {
+      target: { files: [file] },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Upload avatar and save" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        3,
+        "/api/profile/avatar",
+        expect.objectContaining({
+          method: "DELETE",
+          body: JSON.stringify({
+            avatarUrl:
+              "https://project.supabase.co/storage/v1/object/public/avatars/user-1/avatar.png",
+          }),
+        }),
+      );
+    });
+  });
+
+  it("removes the current avatar before saving the profile", async () => {
+    fetchMock
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
@@ -198,9 +245,28 @@ describe("ProfileDetailsForm", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Remove avatar" }));
 
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save profile" }));
+
     await waitFor(() => {
       expect(fetchMock).toHaveBeenNthCalledWith(
         1,
+        "/api/profile",
+        expect.objectContaining({
+          body: JSON.stringify({
+            avatar_url: "",
+            bio: "",
+            display_name: "Satoshi",
+            timezone: "Europe/London",
+          }),
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        2,
         "/api/profile/avatar",
         expect.objectContaining({
           method: "DELETE",
@@ -214,22 +280,20 @@ describe("ProfileDetailsForm", () => {
         }),
       );
     });
+  });
 
-    fireEvent.click(screen.getByRole("button", { name: "Save profile" }));
+  it("clears a selected avatar file before upload", () => {
+    render(<ProfileDetailsForm profile={profile} />);
 
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenNthCalledWith(
-        2,
-        "/api/profile",
-        expect.objectContaining({
-          body: JSON.stringify({
-            avatar_url: "",
-            bio: "",
-            display_name: "Satoshi",
-            timezone: "Europe/London",
-          }),
-        }),
-      );
+    const file = new File(["avatar"], "avatar.png", { type: "image/png" });
+    fireEvent.change(screen.getByLabelText("Avatar image"), {
+      target: { files: [file] },
     });
+
+    expect(screen.getByText("Selected: avatar.png")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear selected file" }));
+
+    expect(screen.queryByText("Selected: avatar.png")).not.toBeInTheDocument();
   });
 });

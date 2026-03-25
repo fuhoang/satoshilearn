@@ -9,6 +9,7 @@ export async function Navbar() {
 
   return (
     <NavbarClient
+      avatarUrl={profileSummary?.profile.avatar_url ?? null}
       isAuthenticated={Boolean(user)}
       userLabel={profileSummary?.label ?? user?.email ?? null}
     />

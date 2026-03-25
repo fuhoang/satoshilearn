@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 
+import { getSupabaseBrowserEnv } from "@/lib/supabase/config";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const MAX_AVATAR_SIZE = 2 * 1024 * 1024;
@@ -13,6 +14,12 @@ function sanitizeFilename(filename: string) {
 function getAvatarStoragePath(avatarUrl: string, userId: string) {
   try {
     const url = new URL(avatarUrl);
+    const supabaseEnv = getSupabaseBrowserEnv();
+
+    if (supabaseEnv && url.origin !== new URL(supabaseEnv.url).origin) {
+      return null;
+    }
+
     const marker = "/storage/v1/object/public/avatars/";
     const markerIndex = url.pathname.indexOf(marker);
 
@@ -92,8 +99,13 @@ export async function POST(request: Request) {
     });
 
   if (uploadError) {
+    const message =
+      /bucket/i.test(uploadError.message) || /row-level security|policy/i.test(uploadError.message)
+        ? "Avatar storage is not fully configured in Supabase yet. Rerun supabase/schema.sql and try again."
+        : "Unable to upload your avatar right now.";
+
     return NextResponse.json(
-      { error: "Unable to upload your avatar right now." },
+      { error: message },
       { status: 500 },
     );
   }
