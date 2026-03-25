@@ -1,4 +1,14 @@
+import type { Metadata } from "next";
+
 import { AuthForm } from "@/components/auth/AuthForm";
+import { createPageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = createPageMetadata({
+  title: "Create account",
+  description: "Create a Blockwise account to save lesson progress, quizzes, and tutor history.",
+  pathname: "/auth/register",
+  noIndex: true,
+});
 import {
   getAuthErrorFromSearchParam,
   getAuthMessageFromSearchParam,

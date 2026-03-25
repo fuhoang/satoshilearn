@@ -1,8 +1,18 @@
+import type { Metadata } from "next";
+
 import { AccountSecurityForm } from "@/components/profile/AccountSecurityForm";
 import { ProfileDetailsForm } from "@/components/profile/ProfileDetailsForm";
 import { getAccountStatus } from "@/lib/account-status";
 import { getOrCreateProfile } from "@/lib/profile";
+import { createPageMetadata } from "@/lib/seo";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+export const metadata: Metadata = createPageMetadata({
+  title: "Profile",
+  description: "Manage your Blockwise profile, avatar, account security, and plan access.",
+  pathname: "/profiles",
+  noIndex: true,
+});
 
 export default async function ProfilesPage() {
   const profile = await getOrCreateProfile();

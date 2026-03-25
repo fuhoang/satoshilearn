@@ -1,7 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { getAccountStatus } from "@/lib/account-status";
 import { getProfileSummary } from "@/lib/profile";
+import { createPageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = createPageMetadata({
+  title: "Purchases",
+  description: "View your Blockwise plan access, billing hub, and future purchase history.",
+  pathname: "/purchases",
+  noIndex: true,
+});
 
 export default async function PurchasesPage() {
   const accountStatus = getAccountStatus();

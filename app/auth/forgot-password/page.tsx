@@ -1,4 +1,14 @@
+import type { Metadata } from "next";
+
 import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
+import { createPageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = createPageMetadata({
+  title: "Forgot password",
+  description: "Request a password reset email for your Blockwise account.",
+  pathname: "/auth/forgot-password",
+  noIndex: true,
+});
 import {
   getAuthErrorFromSearchParam,
   getAuthMessageFromSearchParam,

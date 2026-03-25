@@ -1,6 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Card } from "@/components/ui/Card";
+import { createPageMetadata } from "@/lib/seo";
 
 const plans = [
   {
@@ -14,6 +16,13 @@ const plans = [
     description: "Full curriculum, quizzes, and AI tutor support.",
   },
 ];
+
+export const metadata: Metadata = createPageMetadata({
+  title: "Pricing",
+  description:
+    "View Blockwise pricing for Bitcoin learning plans, including curriculum access, quizzes, and AI tutor support.",
+  pathname: "/pricing",
+});
 
 export default function PricingPage() {
   return (

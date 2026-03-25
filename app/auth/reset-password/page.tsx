@@ -1,4 +1,14 @@
+import type { Metadata } from "next";
+
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
+import { createPageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = createPageMetadata({
+  title: "Reset password",
+  description: "Reset your Blockwise account password and restore access to your learning progress.",
+  pathname: "/auth/reset-password",
+  noIndex: true,
+});
 import {
   getAuthErrorFromSearchParam,
   getAuthMessageFromSearchParam,

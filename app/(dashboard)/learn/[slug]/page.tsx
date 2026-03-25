@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { LessonContent } from "@/components/lesson/LessonContent";
@@ -7,6 +8,32 @@ import { ProgressBar } from "@/components/lesson/ProgressBar";
 import { lessonConfig, moduleConfig } from "@/content/config";
 import { buildLessonQuiz } from "@/lib/lesson-quiz";
 import { getAdjacentLessons, getLessonBySlug } from "@/lib/lessons";
+import { createPageMetadata } from "@/lib/seo";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const lesson = getLessonBySlug(slug);
+
+  if (!lesson) {
+    return createPageMetadata({
+      title: "Lesson",
+      description: "Blockwise Bitcoin lesson.",
+      pathname: `/learn/${slug}`,
+      noIndex: true,
+    });
+  }
+
+  return createPageMetadata({
+    title: lesson.title,
+    description: lesson.summary,
+    pathname: `/learn/${slug}`,
+    noIndex: true,
+  });
+}
 
 export default async function LearnLessonPage({
   params,
