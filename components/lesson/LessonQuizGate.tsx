@@ -9,10 +9,12 @@ import { LessonNavigation } from "@/components/lesson/LessonNavigation";
 import { QuizCard } from "@/components/quiz/QuizCard";
 import { QuizResult } from "@/components/quiz/QuizResult";
 import { Button } from "@/components/ui/Button";
+import { useLearningHistory } from "@/hooks/useLearningHistory";
 import { useLessonProgress } from "@/hooks/useLessonProgress";
 
 type LessonQuizGateProps = {
   lessonSlug: string;
+  lessonTitle: string;
   questions: QuizQuestion[];
   previous: LessonMeta | null;
   next: LessonMeta | null;
@@ -20,6 +22,7 @@ type LessonQuizGateProps = {
 
 export function LessonQuizGate({
   lessonSlug,
+  lessonTitle,
   questions,
   previous,
   next,
@@ -29,6 +32,7 @@ export function LessonQuizGate({
   const [passed, setPassed] = useState(false);
   const [skipped, setSkipped] = useState(false);
   const { isLessonCompleted, loaded, markLessonCompleted } = useLessonProgress();
+  const { recordLessonCompleted, recordQuizAttempt } = useLearningHistory();
   const completed = isLessonCompleted(lessonSlug);
   const quizPassed = completed || passed;
 
@@ -57,9 +61,20 @@ export function LessonQuizGate({
     setChecked(true);
     setPassed(allCorrect);
     setSkipped(false);
+    recordQuizAttempt({
+      lessonSlug,
+      lessonTitle,
+      correctCount,
+      totalQuestions: questions.length,
+      passed: allCorrect,
+    });
 
     if (allCorrect) {
       markLessonCompleted(lessonSlug);
+      recordLessonCompleted({
+        lessonSlug,
+        lessonTitle,
+      });
     }
   }
 

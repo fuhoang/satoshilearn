@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import { ProgressBar } from "@/components/lesson/ProgressBar";
 import { QuizCard } from "@/components/quiz/QuizCard";
+import { useLearningHistory } from "@/hooks/useLearningHistory";
 import { useLessonProgress } from "@/hooks/useLessonProgress";
 import {
   getCompletedModuleLessonCount,
@@ -28,6 +29,7 @@ export function DashboardOverview({
   totalLessons,
 }: DashboardOverviewProps) {
   const { completedCount, completedLessonSlugs, loaded } = useLessonProgress();
+  const { lessonCompletions, quizAttempts } = useLearningHistory();
   const currentModule = getCurrentModule(modules, completedLessonSlugs);
   const nextLesson = currentModule
     ? getNextModuleLesson(currentModule, completedLessonSlugs)
@@ -46,6 +48,25 @@ export function DashboardOverview({
       getCompletedModuleLessonCount(module, completedLessonSlugs) ===
       module.lessons.length,
   ).length;
+  const recentActivity = [
+    ...lessonCompletions.map((entry) => ({
+      kind: "completion" as const,
+      lessonSlug: entry.lessonSlug,
+      lessonTitle: entry.lessonTitle,
+      timestamp: entry.completedAt,
+    })),
+    ...quizAttempts.map((entry) => ({
+      kind: "quiz" as const,
+      lessonSlug: entry.lessonSlug,
+      lessonTitle: entry.lessonTitle,
+      timestamp: entry.attemptedAt,
+      passed: entry.passed,
+      scoreLabel: `${entry.correctCount}/${entry.totalQuestions}`,
+    })),
+  ]
+    .sort((left, right) => Date.parse(right.timestamp) - Date.parse(left.timestamp))
+    .slice(0, 5);
+  const recentQuizAttempts = quizAttempts.slice(0, 4);
 
   return (
     <div className="space-y-8">
@@ -172,7 +193,7 @@ export function DashboardOverview({
                 <h2 className="mt-2 text-2xl font-bold">Manage your learning setup</h2>
               </div>
             </div>
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
               <div className="rounded-3xl border border-black/8 bg-white/75 p-5">
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
                   Profile
@@ -192,9 +213,9 @@ export function DashboardOverview({
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
                   Subscription
                 </p>
-                <p className="mt-3 text-lg font-semibold">Free access</p>
+                <p className="mt-3 text-lg font-semibold">Free plan</p>
                 <p className="mt-2 text-sm leading-7 text-[var(--muted)]">
-                  Upgrade later when paid plans and purchase history are live.
+                  Curriculum, quizzes, and the tutor are active. Billing will plug into this card later.
                 </p>
                 <Link
                   href="/purchases"
@@ -203,6 +224,101 @@ export function DashboardOverview({
                   View purchases
                 </Link>
               </div>
+              <div className="rounded-3xl border border-black/8 bg-white/75 p-5">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
+                  Learning setup
+                </p>
+                <p className="mt-3 text-lg font-semibold">Protected account</p>
+                <p className="mt-2 text-sm leading-7 text-[var(--muted)]">
+                  Progress sync, reset-password support, and authenticated access are active on this account.
+                </p>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <StatusPill label="Auth active" tone="neutral" />
+                  <StatusPill label={`${currentTrack.title} track`} tone="accent" />
+                  <StatusPill label="Progress sync" tone="success" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="surface rounded-3xl p-6">
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
+                Recent activity
+              </p>
+              <h2 className="mt-2 text-2xl font-bold">Your latest learning moments</h2>
+              {recentActivity.length > 0 ? (
+                <div className="mt-6 space-y-3">
+                  {recentActivity.map((entry) => (
+                    <div
+                      key={`${entry.kind}-${entry.lessonSlug}-${entry.timestamp}`}
+                      className="rounded-3xl border border-black/8 bg-white/75 p-4"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold">
+                            {entry.kind === "completion"
+                              ? "Lesson completed"
+                              : entry.passed
+                                ? "Quiz passed"
+                                : "Quiz review needed"}
+                          </p>
+                          <p className="mt-1 text-sm text-[var(--muted)]">
+                            {entry.lessonTitle}
+                            {entry.kind === "quiz" ? ` · ${entry.scoreLabel}` : ""}
+                          </p>
+                        </div>
+                        <span className="text-xs uppercase tracking-[0.16em] text-[var(--muted)]">
+                          {formatRelativeTimestamp(entry.timestamp)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  body="Complete a lesson or check a quiz to start building your activity feed."
+                  title="No activity yet"
+                />
+              )}
+            </div>
+
+            <div className="surface rounded-3xl p-6">
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
+                Quiz history
+              </p>
+              <h2 className="mt-2 text-2xl font-bold">How your checks are going</h2>
+              {recentQuizAttempts.length > 0 ? (
+                <div className="mt-6 space-y-3">
+                  {recentQuizAttempts.map((attempt) => (
+                    <div
+                      key={`${attempt.lessonSlug}-${attempt.attemptedAt}`}
+                      className="rounded-3xl border border-black/8 bg-white/75 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold">{attempt.lessonTitle}</p>
+                          <p className="mt-1 text-sm text-[var(--muted)]">
+                            {attempt.correctCount} of {attempt.totalQuestions} correct
+                          </p>
+                        </div>
+                        <StatusPill
+                          label={attempt.passed ? "Passed" : "Retry"}
+                          tone={attempt.passed ? "success" : "warning"}
+                        />
+                      </div>
+                      <p className="mt-3 text-xs uppercase tracking-[0.16em] text-[var(--muted)]">
+                        {formatRelativeTimestamp(attempt.attemptedAt)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  body="Your last quiz results will appear here once you finish a lesson check."
+                  title="No quiz attempts yet"
+                />
+              )}
             </div>
           </div>
         </div>
@@ -214,6 +330,64 @@ export function DashboardOverview({
       </section>
     </div>
   );
+}
+
+function StatusPill({
+  label,
+  tone,
+}: {
+  label: string;
+  tone: "accent" | "neutral" | "success" | "warning";
+}) {
+  const classes = {
+    accent: "border-orange-500/20 bg-orange-500/10 text-orange-400",
+    neutral: "border-black/10 bg-black/5 text-[var(--muted)]",
+    success: "border-emerald-500/20 bg-emerald-500/10 text-emerald-500",
+    warning: "border-amber-500/20 bg-amber-500/10 text-amber-600",
+  };
+
+  return (
+    <span
+      className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${classes[tone]}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+function EmptyState({ body, title }: { body: string; title: string }) {
+  return (
+    <div className="mt-6 rounded-3xl border border-black/8 bg-white/75 p-5">
+      <p className="text-sm font-semibold">{title}</p>
+      <p className="mt-2 text-sm leading-7 text-[var(--muted)]">{body}</p>
+    </div>
+  );
+}
+
+function formatRelativeTimestamp(timestamp: string) {
+  const diffMs = Date.now() - Date.parse(timestamp);
+  const diffMinutes = Math.max(1, Math.round(diffMs / 60000));
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes}m ago`;
+  }
+
+  const diffHours = Math.round(diffMinutes / 60);
+
+  if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  }
+
+  const diffDays = Math.round(diffHours / 24);
+
+  if (diffDays < 7) {
+    return `${diffDays}d ago`;
+  }
+
+  return new Date(timestamp).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+  });
 }
 
 function SummaryCard({

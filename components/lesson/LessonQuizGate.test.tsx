@@ -6,6 +6,7 @@ import type { LessonMeta } from "@/types/lesson";
 import type { QuizQuestion } from "@/types/quiz";
 
 const mockUseLessonProgress = vi.fn();
+const mockUseLearningHistory = vi.fn();
 
 vi.mock("next/link", () => ({
   default: ({
@@ -24,6 +25,10 @@ vi.mock("next/link", () => ({
 
 vi.mock("@/hooks/useLessonProgress", () => ({
   useLessonProgress: () => mockUseLessonProgress(),
+}));
+
+vi.mock("@/hooks/useLearningHistory", () => ({
+  useLearningHistory: () => mockUseLearningHistory(),
 }));
 
 const previousLesson: LessonMeta = {
@@ -73,6 +78,13 @@ const questions: QuizQuestion[] = [
 describe("LessonQuizGate", () => {
   beforeEach(() => {
     mockUseLessonProgress.mockReset();
+    mockUseLearningHistory.mockReset();
+    mockUseLearningHistory.mockReturnValue({
+      lessonCompletions: [],
+      quizAttempts: [],
+      recordLessonCompleted: vi.fn(),
+      recordQuizAttempt: vi.fn(),
+    });
     mockUseLessonProgress.mockReturnValue({
       loaded: true,
       completedLessonSlugs: [],
@@ -86,6 +98,7 @@ describe("LessonQuizGate", () => {
     render(
       <LessonQuizGate
         lessonSlug="lesson-a"
+        lessonTitle="Lesson A"
         next={nextLesson}
         previous={previousLesson}
         questions={questions}
@@ -102,6 +115,8 @@ describe("LessonQuizGate", () => {
 
   it("marks the lesson completed when the learner passes the quiz", () => {
     const markLessonCompleted = vi.fn();
+    const recordLessonCompleted = vi.fn();
+    const recordQuizAttempt = vi.fn();
 
     mockUseLessonProgress.mockReturnValue({
       loaded: true,
@@ -110,10 +125,17 @@ describe("LessonQuizGate", () => {
       isLessonCompleted: () => false,
       markLessonCompleted,
     });
+    mockUseLearningHistory.mockReturnValue({
+      lessonCompletions: [],
+      quizAttempts: [],
+      recordLessonCompleted,
+      recordQuizAttempt,
+    });
 
     render(
       <LessonQuizGate
         lessonSlug="lesson-a"
+        lessonTitle="Lesson A"
         next={nextLesson}
         previous={previousLesson}
         questions={questions}
@@ -126,6 +148,17 @@ describe("LessonQuizGate", () => {
     fireEvent.click(screen.getByRole("button", { name: "Check answers" }));
 
     expect(markLessonCompleted).toHaveBeenCalledWith("lesson-a");
+    expect(recordLessonCompleted).toHaveBeenCalledWith({
+      lessonSlug: "lesson-a",
+      lessonTitle: "Lesson A",
+    });
+    expect(recordQuizAttempt).toHaveBeenCalledWith({
+      lessonSlug: "lesson-a",
+      lessonTitle: "Lesson A",
+      correctCount: 3,
+      totalQuestions: 3,
+      passed: true,
+    });
     expect(screen.getByText("Lesson complete")).toBeInTheDocument();
     const nextLink = screen.getByText("What Is Bitcoin?").closest("a");
     expect(nextLink).toHaveAttribute("href", "/learn/what-is-bitcoin");

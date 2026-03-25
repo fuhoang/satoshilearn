@@ -5,6 +5,7 @@ import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 import type { ModuleMeta, TrackMeta } from "@/types/lesson";
 
 const mockUseLessonProgress = vi.fn();
+const mockUseLearningHistory = vi.fn();
 
 vi.mock("next/link", () => ({
   default: ({
@@ -23,6 +24,10 @@ vi.mock("next/link", () => ({
 
 vi.mock("@/hooks/useLessonProgress", () => ({
   useLessonProgress: () => mockUseLessonProgress(),
+}));
+
+vi.mock("@/hooks/useLearningHistory", () => ({
+  useLearningHistory: () => mockUseLearningHistory(),
 }));
 
 vi.mock("@/components/chat/ChatWindow", () => ({
@@ -92,6 +97,13 @@ const modules: ModuleMeta[] = [
 describe("DashboardOverview", () => {
   beforeEach(() => {
     mockUseLessonProgress.mockReset();
+    mockUseLearningHistory.mockReset();
+    mockUseLearningHistory.mockReturnValue({
+      lessonCompletions: [],
+      quizAttempts: [],
+      recordLessonCompleted: vi.fn(),
+      recordQuizAttempt: vi.fn(),
+    });
   });
 
   it("renders progress, current module, and account summaries", () => {
@@ -112,7 +124,7 @@ describe("DashboardOverview", () => {
       />,
     );
 
-    expect(screen.getByText("Bitcoin track")).toBeInTheDocument();
+    expect(screen.getAllByText("Bitcoin track")).toHaveLength(2);
     expect(screen.getAllByText("Satoshi")).toHaveLength(2);
     expect(screen.getAllByText("Foundations")).toHaveLength(2);
     expect(screen.getByText("What Is Bitcoin?")).toBeInTheDocument();
@@ -124,7 +136,54 @@ describe("DashboardOverview", () => {
       "href",
       "/learn/module/foundations",
     );
+    expect(screen.getByText("No activity yet")).toBeInTheDocument();
     expect(screen.getByTestId("quiz-card")).toBeInTheDocument();
     expect(screen.getByTestId("chat-window")).toBeInTheDocument();
+  });
+
+  it("renders recent activity and quiz history when available", () => {
+    mockUseLessonProgress.mockReturnValue({
+      loaded: true,
+      completedCount: 2,
+      completedLessonSlugs: ["what-is-money", "what-is-bitcoin"],
+      isLessonCompleted: (slug: string) =>
+        ["what-is-money", "what-is-bitcoin"].includes(slug),
+      markLessonCompleted: vi.fn(),
+    });
+    mockUseLearningHistory.mockReturnValue({
+      lessonCompletions: [
+        {
+          lessonSlug: "what-is-bitcoin",
+          lessonTitle: "What Is Bitcoin?",
+          completedAt: "2026-03-25T11:00:00.000Z",
+        },
+      ],
+      quizAttempts: [
+        {
+          lessonSlug: "what-is-bitcoin",
+          lessonTitle: "What Is Bitcoin?",
+          attemptedAt: "2026-03-25T11:05:00.000Z",
+          correctCount: 3,
+          totalQuestions: 3,
+          passed: true,
+        },
+      ],
+      recordLessonCompleted: vi.fn(),
+      recordQuizAttempt: vi.fn(),
+    });
+
+    render(
+      <DashboardOverview
+        currentTrack={currentTrack}
+        modules={modules}
+        profileLabel="Satoshi"
+        totalLessons={3}
+      />,
+    );
+
+    expect(screen.getByText("Quiz passed")).toBeInTheDocument();
+    expect(screen.getByText("Lesson completed")).toBeInTheDocument();
+    expect(screen.getByText("3 of 3 correct")).toBeInTheDocument();
+    expect(screen.getByText("Protected account")).toBeInTheDocument();
   });
 });

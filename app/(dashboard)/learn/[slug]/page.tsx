@@ -69,6 +69,7 @@ export default async function LearnLessonPage({
       </div>
       <LessonQuizGate
         lessonSlug={lesson.slug}
+        lessonTitle={lesson.title}
         next={adjacent.next}
         previous={adjacent.previous}
         questions={quizQuestions}
