@@ -11,7 +11,7 @@ const googleSans = Google_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "SatoshiLearn",
+  title: "BlockWise",
   description: "Structured Bitcoin learning with lessons, quizzes, and an AI tutor.",
 };
 

@@ -46,7 +46,7 @@ describe("HomePage", () => {
     render(<HomePage />);
 
     expect(
-      screen.getByRole("heading", { name: "Learn Bitcoin the easy way." }),
+      screen.getByRole("heading", { name: "Learn Crypto the easy way." }),
     ).toBeInTheDocument();
     expect(
       screen.getByText("Simple lessons. Clear explanations. Step by step."),

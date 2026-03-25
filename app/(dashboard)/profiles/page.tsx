@@ -10,7 +10,7 @@ export default async function ProfilesPage() {
         <section className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8">
           <p className="text-sm text-zinc-500">Profile</p>
           <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
-            Your Satoshi Learn account
+            Your BlockWise account
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-8 text-zinc-400 sm:text-lg">
             This page reflects the authenticated Supabase user linked to your

@@ -42,16 +42,31 @@ export function NavbarClient({
             onClick={() => setIsMenuOpen(false)}
           >
             <span
-              className="text-center text-xl uppercase tracking-[0.08em] text-white sm:text-2xl"
-              style={{ fontFamily: BRAND_FONT_STACK }}
+              aria-hidden="true"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5"
             >
-              Satoshi Learn
+              <svg
+                className="h-8 w-8"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect x="1.5" y="1.5" width="21" height="21" rx="4.75" fill="#F97316" />
+                <path
+                  d="M4.6 5.6H9.3C11.85 5.6 13.35 6.75 13.35 8.65C13.35 9.85 12.65 10.7 11.45 11.05C12.95 11.35 13.8 12.35 13.8 13.85C13.8 15.95 12.25 17.2 9.55 17.2H4.6V5.6ZM7 7.65V10.15H8.95C10.2 10.15 10.9 9.75 10.9 8.9C10.9 8 10.25 7.65 8.95 7.65H7ZM7 12.05V15.15H9.2C10.6 15.15 11.3 14.65 11.3 13.65C11.3 12.6 10.55 12.05 9.1 12.05H7Z"
+                  fill="white"
+                />
+                <path
+                  d="M11.3 5.8L13.05 17.2H14.95L16 11.55L17.05 17.2H18.95L20.7 5.8H18.95L18 13.35L16.75 5.8H15.25L14 13.35L13.05 5.8H11.3Z"
+                  fill="#565656"
+                />
+              </svg>
             </span>
             <span
-              aria-hidden="true"
-              className="mb-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[8px] font-black text-black"
+              className="text-center text-2xl uppercase tracking-[0.08em] text-white sm:text-3xl"
+              style={{ fontFamily: BRAND_FONT_STACK }}
             >
-              ₿
+              BlockWise
             </span>
           </Link>
           <button
@@ -92,16 +107,31 @@ export function NavbarClient({
           className="hidden items-end justify-center gap-2 md:flex md:justify-self-center"
         >
           <span
-            className="text-center text-xl uppercase tracking-[0.08em] text-white sm:text-2xl md:text-3xl"
-            style={{ fontFamily: BRAND_FONT_STACK }}
+            aria-hidden="true"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-white/10 bg-white/5"
           >
-            Satoshi Learn
+            <svg
+              className="h-9 w-9"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <rect x="1.5" y="1.5" width="21" height="21" rx="4.75" fill="#F97316" />
+              <path
+                d="M4.6 5.6H9.3C11.85 5.6 13.35 6.75 13.35 8.65C13.35 9.85 12.65 10.7 11.45 11.05C12.95 11.35 13.8 12.35 13.8 13.85C13.8 15.95 12.25 17.2 9.55 17.2H4.6V5.6ZM7 7.65V10.15H8.95C10.2 10.15 10.9 9.75 10.9 8.9C10.9 8 10.25 7.65 8.95 7.65H7ZM7 12.05V15.15H9.2C10.6 15.15 11.3 14.65 11.3 13.65C11.3 12.6 10.55 12.05 9.1 12.05H7Z"
+                fill="white"
+              />
+              <path
+                d="M11.3 5.8L13.05 17.2H14.95L16 11.55L17.05 17.2H18.95L20.7 5.8H18.95L18 13.35L16.75 5.8H15.25L14 13.35L13.05 5.8H11.3Z"
+                fill="#565656"
+              />
+            </svg>
           </span>
           <span
-            aria-hidden="true"
-            className="mb-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[8px] font-black text-black"
+            className="text-center text-2xl uppercase tracking-[0.08em] text-white sm:text-3xl md:text-4xl"
+            style={{ fontFamily: BRAND_FONT_STACK }}
           >
-            ₿
+            BlockWise
           </span>
         </Link>
         <div className="hidden items-center justify-center gap-3 md:flex md:justify-self-end">

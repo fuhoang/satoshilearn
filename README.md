@@ -1,6 +1,6 @@
-# SatoshiLearn
+# BlockWise
 
-Next.js 16 app for SatoshiLearn.
+Next.js 16 app for BlockWise.
 
 ## Local Development
 
