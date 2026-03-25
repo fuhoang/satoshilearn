@@ -37,7 +37,7 @@ describe("profiles page route", () => {
 
     render(page);
 
-    expect(screen.getByText("Your Satoshi Learn account")).toBeInTheDocument();
+    expect(screen.getByText("Your BlockWise account")).toBeInTheDocument();
     expect(screen.getByText("Satoshi")).toBeInTheDocument();
     expect(screen.getByText("user@example.com")).toBeInTheDocument();
     expect(screen.getByText("Europe/London")).toBeInTheDocument();

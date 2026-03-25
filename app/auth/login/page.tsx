@@ -19,7 +19,7 @@ export default async function LoginPage({
           </h1>
           <p className="mt-5 text-base leading-8 text-zinc-400 sm:text-lg">
             Supabase Auth will handle sign in, session cookies, and future user-owned
-            progress persistence for Satoshi Learn.
+            progress persistence for BlockWise.
           </p>
         </div>
         <AuthForm mode="login" nextPath={nextPath} />
