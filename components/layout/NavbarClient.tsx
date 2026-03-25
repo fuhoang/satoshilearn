@@ -158,12 +158,19 @@ export function NavbarClient({
               ) : null}
             </div>
           ) : (
-            <Link
-              href="/auth/login"
-              className="text-sm text-zinc-400 transition hover:text-white"
-            >
-              Log in
-            </Link>
+            <>
+              <Link
+                href="/auth/login"
+                className="text-sm text-zinc-400 transition hover:text-white"
+              >
+                Log in
+              </Link>
+              <Link href="/auth/register">
+                <Button className="bg-orange-500 !px-6 !py-3 !text-lg !leading-none !text-white hover:bg-orange-400 hover:!text-white">
+                  Join for free
+                </Button>
+              </Link>
+            </>
           )}
         </div>
 
@@ -212,14 +219,21 @@ export function NavbarClient({
                   </a>
                 </>
               ) : (
-                <Link href="/auth/login" onClick={() => setIsMenuOpen(false)}>
-                  <button
-                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition hover:bg-white/10"
-                    type="button"
-                  >
-                    Log in
-                  </button>
-                </Link>
+                <>
+                  <Link href="/auth/register" onClick={() => setIsMenuOpen(false)}>
+                    <Button className="w-full bg-orange-500 !px-6 !py-3 !text-lg !leading-none !text-white hover:bg-orange-400 hover:!text-white">
+                      Join for free
+                    </Button>
+                  </Link>
+                  <Link href="/auth/login" onClick={() => setIsMenuOpen(false)}>
+                    <button
+                      className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition hover:bg-white/10"
+                      type="button"
+                    >
+                      Log in
+                    </button>
+                  </Link>
+                </>
               )}
             </div>
           </div>

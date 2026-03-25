@@ -124,19 +124,16 @@ export default function HomePage() {
               Simple lessons. Clear explanations. Step by step.
             </p>
 
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:justify-center">
-              <Link
-                href="/learn"
-                className="rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-black transition hover:bg-orange-400"
-              >
-                Start free
-              </Link>
-              <Link
-                href="/#curriculum"
-                className="rounded-xl border border-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/5"
-              >
-                View curriculum
-              </Link>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-sm text-zinc-300">
+              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-2">
+                Clear lessons
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-2">
+                Safe guidance
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-2">
+                Built for beginners
+              </div>
             </div>
           </div>
 
