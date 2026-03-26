@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 type PlanKey = "pro_monthly" | "pro_yearly";
 
@@ -15,10 +16,12 @@ export function BillingActions({
   canOpenPortal,
   checkoutLabel,
 }: BillingActionsProps) {
+  const searchParams = useSearchParams();
   const [loadingAction, setLoadingAction] = useState<
     PlanKey | "portal" | null
   >(null);
   const [error, setError] = useState<string | null>(null);
+  const hasAutoStartedRef = useRef(false);
 
   async function startCheckout(plan: PlanKey) {
     setLoadingAction(plan);
@@ -73,6 +76,21 @@ export function BillingActions({
       setLoadingAction(null);
     }
   }
+
+  useEffect(() => {
+    const requestedPlan = searchParams.get("plan");
+
+    if (
+      hasAutoStartedRef.current ||
+      !canCheckout ||
+      (requestedPlan !== "pro_monthly" && requestedPlan !== "pro_yearly")
+    ) {
+      return;
+    }
+
+    hasAutoStartedRef.current = true;
+    void startCheckout(requestedPlan);
+  }, [canCheckout, searchParams]);
 
   return (
     <div className="space-y-4">

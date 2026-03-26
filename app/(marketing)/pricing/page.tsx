@@ -1,22 +1,59 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Card } from "@/components/ui/Card";
 import { publicGuides } from "@/lib/public-guides";
 import { createPageMetadata } from "@/lib/seo";
 
 const plans = [
   {
-    name: "Starter",
+    name: "Free",
     price: "$0",
-    description: "Core lessons and preview access to the tutor.",
+    cadence: "forever",
+    description:
+      "Get the live Bitcoin curriculum, guided lessons, quizzes, and your learning dashboard at no cost.",
+    accent: "border-white/10 bg-white/[0.04]",
+    badge: "Start here",
+    ctaLabel: "Join free",
+    href: "/auth/register",
+    features: [
+      "Live Bitcoin track access",
+      "Quiz progress and dashboard history",
+      "Account profile and recovery tools",
+    ],
   },
   {
-    name: "Pro",
-    price: "$19",
-    description: "Full curriculum, quizzes, and AI tutor support.",
+    name: "Pro Monthly",
+    price: "$14.99",
+    cadence: "per month",
+    description:
+      "Unlock premium billing access, future premium tracks, stronger tutor usage, and a flexible monthly subscription.",
+    accent: "border-orange-500/30 bg-orange-500/10",
+    badge: "Most flexible",
+    ctaLabel: "Upgrade to Pro",
+    href: "/purchases?plan=pro_monthly",
+    features: [
+      "Everything in Starter",
+      "Expanded tutor access",
+      "Billing portal and purchase history",
+    ],
   },
-];
+  {
+    name: "Pro Yearly",
+    price: "$149.99",
+    cadence: "per year",
+    description:
+      "Get the same Pro access with a fixed annual price and the cleanest long-term plan for committed learners.",
+    accent: "border-emerald-400/30 bg-emerald-400/10",
+    badge: "Best value",
+    ctaLabel: "Choose yearly",
+    href: "/purchases?plan=pro_yearly",
+    features: [
+      "Everything in Pro Monthly",
+      "Lower annual cost than paying monthly",
+      "Annual billing with full portal access",
+    ],
+  },
+] as const;
 
 export const metadata: Metadata = createPageMetadata({
   title: "Pricing",
@@ -28,57 +65,167 @@ export const metadata: Metadata = createPageMetadata({
 
 export default function PricingPage() {
   return (
-    <section className="px-6 py-16">
-      <div className="max-w-2xl">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
-          Pricing
-        </p>
-        <h1 className="mt-3 text-5xl font-black tracking-tight">Simple plans for serious crypto learners</h1>
-      </div>
-      <div className="mt-10 grid gap-5 md:grid-cols-2">
-        {plans.map((plan) => (
-          <Card key={plan.name} className="p-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">{plan.name}</p>
-            <h2 className="mt-4 text-5xl font-black">{plan.price}</h2>
-            <p className="mt-4 text-sm leading-7 text-[var(--muted)]">{plan.description}</p>
-            <Link href="/learn" className="mt-8 inline-flex text-sm font-semibold text-[var(--accent-strong)]">
-              Choose {plan.name}
-            </Link>
-          </Card>
-        ))}
-      </div>
-      <div className="mt-12 max-w-5xl rounded-[1.75rem] border border-white/10 bg-white/5 p-8">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-          Explore free guides first
-        </p>
-        <h2 className="mt-3 text-3xl font-black tracking-tight">
-          Learn the basics before you choose a plan.
-        </h2>
-        <p className="mt-4 max-w-3xl text-sm leading-7 text-[var(--muted)]">
-          Public guides explain crypto basics, Bitcoin, wallets, and transactions
-          in plain language before learners move into the full product.
-        </p>
-        <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {publicGuides.slice(0, 3).map((guide) => (
-            <Link
-              key={guide.id}
-              href={guide.href}
-              className="rounded-2xl border border-white/10 bg-black/20 p-5 transition hover:border-orange-500/30 hover:bg-black/30"
-            >
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
-                {guide.eyebrow}
-              </p>
-              <h3 className="mt-3 text-lg font-semibold">{guide.title}</h3>
-              <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-                {guide.summary}
-              </p>
-              <span className="mt-4 inline-flex text-sm font-semibold text-[var(--accent-strong)]">
-                Read guide
-              </span>
-            </Link>
-          ))}
+    <main className="min-h-screen bg-zinc-950 text-white">
+      <section className="border-b border-white/10 px-6 py-16 sm:py-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8 sm:p-10">
+            <div className="mt-4 flex justify-center">
+              <div className="max-w-3xl text-center">
+                <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+                  Simple plans for beginners and committed learners.
+                </h1>
+                <p className="mt-5 text-base leading-8 text-zinc-400 sm:text-lg">
+                  Learn the basics for free, then upgrade when you want more
+                  depth.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 grid items-stretch gap-5 lg:grid-cols-3">
+            {plans.map((plan) => (
+              <article
+                key={plan.name}
+                className={`relative flex h-full overflow-hidden rounded-[2rem] border p-8 ${plan.accent}`}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent" />
+                <div className="relative flex h-full flex-col">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-sm uppercase tracking-[0.18em] text-zinc-500">
+                        {plan.name}
+                      </p>
+                      <h2 className="mt-4 text-5xl font-semibold tracking-tight text-white">
+                        {plan.price}
+                      </h2>
+                      <p className="mt-2 text-sm uppercase tracking-[0.16em] text-zinc-500">
+                        {plan.cadence}
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-300">
+                      {plan.badge}
+                    </span>
+                  </div>
+
+                  <p className="mt-6 text-sm leading-7 text-zinc-300">
+                    {plan.description}
+                  </p>
+
+                  <div className="mt-6 space-y-3">
+                    {plan.features.map((feature) => (
+                      <div
+                        key={feature}
+                        className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-zinc-200"
+                      >
+                        {feature}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-auto pt-8">
+                    <Link
+                      href={plan.href}
+                      className={`inline-flex w-full items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold transition ${
+                        plan.name === "Free"
+                          ? "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                          : plan.name === "Pro Monthly"
+                            ? "bg-orange-500 text-black hover:bg-orange-400"
+                          : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                      }`}
+                    >
+                      {plan.ctaLabel}
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <section className="border-b border-white/10 px-6 py-16">
+        <div className="mx-auto max-w-6xl rounded-[2rem] border border-white/10 bg-white/[0.03] p-8">
+          <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+            <div>
+              <p className="text-sm uppercase tracking-[0.2em] text-zinc-500">
+                What changes with Pro
+              </p>
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white">
+                Pay for deeper usage, not basic access.
+              </h2>
+              <p className="mt-4 text-sm leading-7 text-zinc-400">
+                Blockwise keeps the live Bitcoin curriculum open on the free plan.
+                Pro adds account-level billing tools and the next layer of product
+                depth as premium tracks roll out.
+              </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-[1.5rem] border border-white/10 bg-black/25 p-5">
+                <p className="text-xs uppercase tracking-[0.18em] text-orange-300">
+                  Included today
+                </p>
+                <p className="mt-3 text-lg font-semibold text-white">
+                  Learning, progress, and billing clarity
+                </p>
+                <p className="mt-3 text-sm leading-7 text-zinc-400">
+                  Lessons, quizzes, dashboard progress, purchase history, and
+                  billing management all stay connected to one account.
+                </p>
+              </div>
+              <div className="rounded-[1.5rem] border border-white/10 bg-black/25 p-5">
+                <p className="text-xs uppercase tracking-[0.18em] text-emerald-300">
+                  Coming next
+                </p>
+                <p className="mt-3 text-lg font-semibold text-white">
+                  Premium tracks and stronger tutor access
+                </p>
+                <p className="mt-3 text-sm leading-7 text-zinc-400">
+                  Pro is the path for future premium tracks, expanded AI usage,
+                  and more advanced account-level learning controls.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-6 py-16">
+        <div className="mx-auto max-w-6xl rounded-[2rem] border border-white/10 bg-white/[0.03] p-8">
+          <p className="text-sm uppercase tracking-[0.2em] text-zinc-500">
+            Explore free guides first
+          </p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+            Learn the basics before you choose a plan.
+          </h2>
+          <p className="mt-4 max-w-3xl text-sm leading-7 text-zinc-400">
+            Public guides explain crypto basics, Bitcoin, wallets, and
+            transactions in plain language before learners move into the full
+            product.
+          </p>
+          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {publicGuides.slice(0, 3).map((guide) => (
+              <Link
+                key={guide.id}
+                href={guide.href}
+                className="rounded-[1.5rem] border border-white/10 bg-black/20 p-5 transition hover:border-orange-500/30 hover:bg-black/30"
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                  {guide.eyebrow}
+                </p>
+                <h3 className="mt-3 text-lg font-semibold text-white">
+                  {guide.title}
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-zinc-400">
+                  {guide.summary}
+                </p>
+                <span className="mt-4 inline-flex text-sm font-semibold text-orange-300">
+                  Read guide
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }
