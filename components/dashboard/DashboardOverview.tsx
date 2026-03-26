@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import { ProgressBar } from "@/components/lesson/ProgressBar";
 import { QuizCard } from "@/components/quiz/QuizCard";
-import { getAccountStatus } from "@/lib/account-status";
+import type { AccountStatus } from "@/lib/account-status";
 import { useLearningHistory } from "@/hooks/useLearningHistory";
 import { useLessonProgress } from "@/hooks/useLessonProgress";
 import { getLearningAnalytics } from "@/lib/learning-history";
@@ -18,6 +18,7 @@ import {
 import type { ModuleMeta, TrackMeta } from "@/types/lesson";
 
 type DashboardOverviewProps = {
+  accountStatus: AccountStatus;
   currentTrack: TrackMeta;
   modules: ModuleMeta[];
   profileLabel: string;
@@ -25,12 +26,12 @@ type DashboardOverviewProps = {
 };
 
 export function DashboardOverview({
+  accountStatus,
   currentTrack,
   modules,
   profileLabel,
   totalLessons,
 }: DashboardOverviewProps) {
-  const accountStatus = getAccountStatus();
   const { completedCount, completedLessonSlugs, loaded } = useLessonProgress();
   const { lessonCompletions, quizAttempts, tutorPrompts } = useLearningHistory();
   const learningAnalytics = getLearningAnalytics({

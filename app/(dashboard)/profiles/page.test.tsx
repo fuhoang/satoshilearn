@@ -3,10 +3,15 @@ import { render, screen } from "@testing-library/react";
 import ProfilesPage from "@/app/(dashboard)/profiles/page";
 
 const getOrCreateProfile = vi.fn();
+const getAccountStatusForCurrentUser = vi.fn();
 const createServerSupabaseClient = vi.fn();
 
 vi.mock("@/lib/profile", () => ({
   getOrCreateProfile: () => getOrCreateProfile(),
+}));
+
+vi.mock("@/lib/account-status", () => ({
+  getAccountStatusForCurrentUser: () => getAccountStatusForCurrentUser(),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -43,6 +48,20 @@ vi.mock("@/components/profile/AccountSecurityForm", () => ({
 
 describe("profiles page route", () => {
   it("renders the consolidated profile summary and edit form", async () => {
+    getAccountStatusForCurrentUser.mockResolvedValue({
+      headline: "Free plan",
+      billingSummary: "Free access is active for your account.",
+      includedFeatures: ["Bitcoin curriculum access"],
+      nextStep: "Choose a Pro plan to unlock more.",
+      upcomingFeatures: ["Priority learning tracks and future premium modules"],
+      ctaHref: "/purchases",
+      ctaLabel: "Open billing hub",
+      billingStatus: "No active subscription",
+      canManageBilling: true,
+      checkoutCtaLabel: "Upgrade to Pro",
+      planLabel: "Free",
+      planSummary: "Free plan summary",
+    });
     createServerSupabaseClient.mockResolvedValue({
       auth: {
         getUser: async () => ({
@@ -71,7 +90,9 @@ describe("profiles page route", () => {
     expect(screen.getByText("Your BlockWise account")).toBeInTheDocument();
     expect(screen.getByText("Satoshi")).toBeInTheDocument();
     expect(screen.getByText("user@example.com")).toBeInTheDocument();
-    expect(screen.getByText("Europe/London")).toBeInTheDocument();
+    expect(screen.getByTestId("profile-details-form")).toHaveTextContent(
+      "Europe/London",
+    );
     expect(
       screen.getByText("Learning Bitcoin from first principles."),
     ).toBeInTheDocument();

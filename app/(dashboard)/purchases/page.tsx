@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { getAccountStatus } from "@/lib/account-status";
-import { getProfileSummary } from "@/lib/profile";
+import { BillingActions } from "@/components/purchases/BillingActions";
+import { getBillingContextForCurrentUser } from "@/lib/account-status";
 import { createPageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = createPageMetadata({
@@ -13,8 +13,9 @@ export const metadata: Metadata = createPageMetadata({
 });
 
 export default async function PurchasesPage() {
-  const accountStatus = getAccountStatus();
-  const { label } = await getProfileSummary();
+  const { accountStatus, billingSnapshot, profile, priceMap } =
+    await getBillingContextForCurrentUser();
+  const purchaseCount = billingSnapshot.purchaseEvents.length;
 
   return (
     <main className="min-h-screen bg-zinc-950 px-6 py-12 text-white">
@@ -25,7 +26,9 @@ export default async function PurchasesPage() {
             Subscription and purchase history
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-8 text-zinc-400 sm:text-lg">
-            This is the billing hub for your Blockwise account. It already reflects your current access level and will hold invoices, renewals, and upgrades once subscriptions are connected.
+            This is the billing hub for your Blockwise account. It reflects your
+            current access level, current subscription state, and recent Stripe
+            purchase events.
           </p>
         </section>
 
@@ -45,7 +48,7 @@ export default async function PurchasesPage() {
                 {accountStatus.planLabel}
               </span>
               <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-300">
-                {label}
+                {profile.display_name || profile.email || "Profile"}
               </span>
             </div>
             <div className="mt-6 space-y-3">
@@ -63,11 +66,22 @@ export default async function PurchasesPage() {
           <div className="space-y-6">
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8">
               <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
-                Plan roadmap
+                Billing actions
               </p>
               <div className="mt-4 space-y-3 text-sm leading-7 text-zinc-300">
-                <p>No purchases are linked to this account yet.</p>
+                <p>
+                  {purchaseCount > 0
+                    ? `${purchaseCount} recent Stripe event${purchaseCount === 1 ? "" : "s"} recorded for this account.`
+                    : "No purchases are linked to this account yet."}
+                </p>
                 <p>{accountStatus.nextStep}</p>
+              </div>
+              <div className="mt-5">
+                <BillingActions
+                  canCheckout={Boolean(priceMap)}
+                  canOpenPortal={Boolean(billingSnapshot.customerId)}
+                  checkoutLabel={accountStatus.checkoutCtaLabel}
+                />
               </div>
               <div className="mt-5 space-y-3">
                 {accountStatus.upcomingFeatures.map((feature) => (
@@ -83,21 +97,46 @@ export default async function PurchasesPage() {
 
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8">
               <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
-                Account links
+                Recent billing events
               </p>
               <div className="mt-4 flex flex-col gap-3">
-                <Link
-                  className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5"
-                  href="/profiles"
-                >
-                  Open profile settings
-                </Link>
-                <Link
-                  className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5"
-                  href="/dashboard"
-                >
-                  Back to dashboard
-                </Link>
+                {billingSnapshot.purchaseEvents.length > 0 ? (
+                  billingSnapshot.purchaseEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-200"
+                    >
+                      <p className="font-medium text-white">{event.event_type}</p>
+                      <p className="mt-1 text-zinc-400">
+                        {event.amount_cents !== null && event.currency
+                          ? `${(event.amount_cents / 100).toFixed(2)} ${event.currency.toUpperCase()}`
+                          : "Amount unavailable"}
+                      </p>
+                      <p className="mt-1 text-zinc-500">
+                        {new Date(event.created_at).toLocaleDateString("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  <>
+                    <Link
+                      className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5"
+                      href="/profiles"
+                    >
+                      Open profile settings
+                    </Link>
+                    <Link
+                      className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/5"
+                      href="/dashboard"
+                    >
+                      Back to dashboard
+                    </Link>
+                  </>
+                )}
               </div>
             </section>
           </div>

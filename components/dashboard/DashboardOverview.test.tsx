@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
+import type { AccountStatus } from "@/lib/account-status";
 import type { ModuleMeta, TrackMeta } from "@/types/lesson";
 
 const mockUseLessonProgress = vi.fn();
@@ -94,6 +95,21 @@ const modules: ModuleMeta[] = [
   },
 ];
 
+const accountStatus: AccountStatus = {
+  billingSummary: "Free access is active for your account.",
+  billingStatus: "No active subscription",
+  canManageBilling: true,
+  checkoutCtaLabel: "Upgrade to Pro",
+  ctaHref: "/purchases",
+  ctaLabel: "Open billing hub",
+  headline: "Free plan",
+  includedFeatures: ["Bitcoin curriculum access"],
+  nextStep: "Choose a Pro plan to unlock more.",
+  planLabel: "Free",
+  planSummary: "Free plan summary",
+  upcomingFeatures: ["Priority learning tracks and future premium modules"],
+};
+
 describe("DashboardOverview", () => {
   beforeEach(() => {
     mockUseLessonProgress.mockReset();
@@ -119,6 +135,7 @@ describe("DashboardOverview", () => {
 
     render(
       <DashboardOverview
+        accountStatus={accountStatus}
         currentTrack={currentTrack}
         modules={modules}
         profileLabel="Satoshi"
@@ -189,6 +206,7 @@ describe("DashboardOverview", () => {
 
     render(
       <DashboardOverview
+        accountStatus={accountStatus}
         currentTrack={currentTrack}
         modules={modules}
         profileLabel="Satoshi"
