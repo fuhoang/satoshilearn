@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 
 import {
+  recordConversionEvent,
   markSubscriptionCanceled,
   recordPurchaseEvent,
   upsertSubscriptionFromStripe,
@@ -64,6 +65,22 @@ export async function POST(request: Request) {
           typeof session.customer === "string" ? session.customer : null,
         subscriptionId:
           typeof session.subscription === "string" ? session.subscription : null,
+      });
+      await recordConversionEvent({
+        eventType: "checkout_complete",
+        plan:
+          session.metadata?.plan_slug === "pro_monthly" ||
+          session.metadata?.plan_slug === "pro_yearly"
+            ? session.metadata.plan_slug
+            : null,
+        source: "stripe_webhook",
+        stripeCustomerId:
+          typeof session.customer === "string" ? session.customer : null,
+        targetSlug: "/purchases",
+        targetTitle:
+          session.metadata?.plan_slug === "pro_yearly"
+            ? "Completed Pro yearly checkout"
+            : "Completed Pro monthly checkout",
       });
       break;
     }

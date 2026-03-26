@@ -444,3 +444,44 @@ export async function recordPurchaseEvent(input: {
     user_id: profile.id,
   });
 }
+
+export async function recordConversionEvent(input: {
+  eventType: "checkout_complete";
+  plan?: BillingPlanSlug | null;
+  source: string;
+  stripeCustomerId?: string | null;
+  targetSlug: string;
+  targetTitle: string;
+}) {
+  const admin = createSupabaseAdminClient();
+
+  if (!admin || !input.stripeCustomerId) {
+    return;
+  }
+
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("stripe_customer_id", input.stripeCustomerId)
+    .maybeSingle();
+
+  if (!profile) {
+    return;
+  }
+
+  await admin.from("learning_activity").insert({
+    activity_context: JSON.stringify({
+      eventType: input.eventType,
+      plan:
+        input.plan === "pro_monthly" || input.plan === "pro_yearly"
+          ? input.plan
+          : null,
+      source: input.source,
+    }),
+    activity_type: "conversion_event",
+    created_at: new Date().toISOString(),
+    lesson_slug: input.targetSlug,
+    lesson_title: input.targetTitle,
+    user_id: profile.id,
+  });
+}

@@ -1,4 +1,5 @@
 import type {
+  ConversionEventRecord,
   LearningHistory,
   LessonCompletionRecord,
   QuizAttemptRecord,
@@ -6,6 +7,7 @@ import type {
 } from "@/types/activity";
 
 export const EMPTY_LEARNING_HISTORY: LearningHistory = {
+  conversionEvents: [],
   lessonCompletions: [],
   quizAttempts: [],
   tutorPrompts: [],
@@ -14,6 +16,7 @@ export const EMPTY_LEARNING_HISTORY: LearningHistory = {
 const MAX_LESSON_COMPLETIONS = 12;
 const MAX_QUIZ_ATTEMPTS = 12;
 const MAX_TUTOR_PROMPTS = 10;
+const MAX_CONVERSION_EVENTS = 20;
 
 function isIsoDate(value: string) {
   return !Number.isNaN(Date.parse(value));
@@ -80,6 +83,33 @@ export function sanitizeLearningHistory(value: unknown): LearningHistory {
       )
     : [];
 
+  const conversionEvents = Array.isArray(
+    (value as LearningHistory).conversionEvents,
+  )
+    ? (value as LearningHistory).conversionEvents.filter(
+        (record): record is ConversionEventRecord =>
+          Boolean(record) &&
+          typeof record.eventType === "string" &&
+          [
+            "locked_view",
+            "upgrade_click",
+            "checkout_start",
+            "checkout_complete",
+          ].includes(record.eventType) &&
+          typeof record.occurredAt === "string" &&
+          isIsoDate(record.occurredAt) &&
+          (record.plan === null ||
+            record.plan === "pro_monthly" ||
+            record.plan === "pro_yearly") &&
+          typeof record.source === "string" &&
+          record.source.length > 0 &&
+          typeof record.targetSlug === "string" &&
+          record.targetSlug.length > 0 &&
+          typeof record.targetTitle === "string" &&
+          record.targetTitle.length > 0,
+      )
+    : [];
+
   const dedupedTutorPrompts = Array.from(
     new Map(
       tutorPrompts
@@ -91,7 +121,22 @@ export function sanitizeLearningHistory(value: unknown): LearningHistory {
     ).values(),
   );
 
+  const dedupedConversionEvents = Array.from(
+    new Map(
+      conversionEvents
+        .sort(
+          (left, right) =>
+            Date.parse(right.occurredAt) - Date.parse(left.occurredAt),
+        )
+        .map((record) => [
+          `${record.eventType}::${record.source}::${record.targetSlug}::${record.occurredAt}`,
+          record,
+        ]),
+    ).values(),
+  );
+
   return {
+    conversionEvents: dedupedConversionEvents.slice(0, MAX_CONVERSION_EVENTS),
     lessonCompletions: dedupedLessonCompletions,
     quizAttempts: quizAttempts
       .sort(
@@ -114,12 +159,14 @@ function shiftUtcDateKey(dateKey: string, days: number) {
 }
 
 export function getLearningAnalytics(history: LearningHistory) {
+  const conversionEvents = history.conversionEvents ?? [];
   const activityDateKeys = Array.from(
     new Set(
       [
         ...history.lessonCompletions.map((entry) => toUtcDateKey(entry.completedAt)),
         ...history.quizAttempts.map((entry) => toUtcDateKey(entry.attemptedAt)),
         ...history.tutorPrompts.map((entry) => toUtcDateKey(entry.repliedAt)),
+        ...conversionEvents.map((entry) => toUtcDateKey(entry.occurredAt)),
       ].sort((left, right) => right.localeCompare(left)),
     ),
   );
@@ -134,14 +181,30 @@ export function getLearningAnalytics(history: LearningHistory) {
   }
 
   const passedQuizCount = history.quizAttempts.filter((entry) => entry.passed).length;
+  const conversionCounts = conversionEvents.reduce(
+    (counts, event) => {
+      counts[event.eventType] += 1;
+      return counts;
+    },
+    {
+      checkout_complete: 0,
+      checkout_start: 0,
+      locked_view: 0,
+      upgrade_click: 0,
+    },
+  );
 
   return {
     activeDays: activityDateKeys.length,
+    checkoutCompletionCount: conversionCounts.checkout_complete,
+    checkoutStartCount: conversionCounts.checkout_start,
     latestTutorPrompt: history.tutorPrompts[0] ?? null,
+    lockedViewCount: conversionCounts.locked_view,
     passedQuizCount,
     streakDays,
     totalTutorPrompts: history.tutorPrompts.length,
     totalQuizAttempts: history.quizAttempts.length,
+    upgradeClickCount: conversionCounts.upgrade_click,
   };
 }
 
@@ -150,6 +213,7 @@ export function mergeLearningHistory(
   incoming: LearningHistory,
 ) {
   return sanitizeLearningHistory({
+    conversionEvents: [...incoming.conversionEvents, ...current.conversionEvents],
     lessonCompletions: [
       ...incoming.lessonCompletions,
       ...current.lessonCompletions,

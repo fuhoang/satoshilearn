@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import type { ModuleMeta, TrackMeta } from "@/types/lesson";
 
+import { useLearningHistory } from "@/hooks/useLearningHistory";
 import { useLessonProgress } from "@/hooks/useLessonProgress";
 import { getCompletedModuleLessonCount } from "@/lib/module-progress";
 
@@ -22,6 +23,7 @@ export function LearnOverview({
   totalLessons,
   tracks,
 }: LearnOverviewProps) {
+  const { recordConversionEvent } = useLearningHistory();
   const { completedCount, completedLessonSlugs, isLessonCompleted, loaded } =
     useLessonProgress();
   const plannedTracks = tracks.filter((track) => track.status === "planned");
@@ -165,6 +167,18 @@ export function LearnOverview({
                   <div className="mt-auto pt-8">
                     <Link
                       href={isPremiumLocked ? "/purchases" : `/learn/module/${module.slug}`}
+                      onClick={() => {
+                        if (!isPremiumLocked) {
+                          return;
+                        }
+
+                        recordConversionEvent({
+                          eventType: "upgrade_click",
+                          source: "learn_overview_module_card",
+                          targetSlug: module.slug,
+                          targetTitle: module.title,
+                        });
+                      }}
                       className={`inline-flex w-full items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold transition ${
                         isPremiumLocked
                           ? "border border-orange-500/20 bg-orange-500/10 text-orange-200 hover:bg-orange-500/15"

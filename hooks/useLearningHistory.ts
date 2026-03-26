@@ -8,6 +8,7 @@ import {
   sanitizeLearningHistory,
 } from "@/lib/learning-history";
 import type {
+  ConversionEventRecord,
   LearningHistory,
   LessonCompletionRecord,
   QuizAttemptRecord,
@@ -43,14 +44,24 @@ function writeHistory(history: LearningHistory) {
 
 function persistActivity(activity: {
   correctCount?: number;
+  eventType?: ConversionEventRecord["eventType"];
   lessonSlug: string;
   lessonTitle: string;
+  occurredAt?: string;
   passed?: boolean;
+  plan?: ConversionEventRecord["plan"];
   repliedAt?: string;
+  source?: string;
+  targetSlug?: string;
+  targetTitle?: string;
   totalQuestions?: number;
   responsePreview?: string | null;
   topic?: string | null;
-  type: "lesson_completion" | "quiz_attempt" | "tutor_prompt";
+  type:
+    | "lesson_completion"
+    | "quiz_attempt"
+    | "tutor_prompt"
+    | "conversion_event";
 }) {
   void fetch("/api/activity", {
     method: "POST",
@@ -139,6 +150,7 @@ export function useLearningHistory() {
 
       writeHistory({
         ...mergeLearningHistory(current, {
+          conversionEvents: [],
           lessonCompletions: [
             {
               ...record,
@@ -164,6 +176,7 @@ export function useLearningHistory() {
 
       writeHistory(
         mergeLearningHistory(current, {
+          conversionEvents: [],
           lessonCompletions: [],
           quizAttempts: [
             {
@@ -206,6 +219,7 @@ export function useLearningHistory() {
 
     writeHistory(
       mergeLearningHistory(current, {
+        conversionEvents: [],
         lessonCompletions: [],
         quizAttempts: [],
         tutorPrompts: [
@@ -228,10 +242,53 @@ export function useLearningHistory() {
     });
   }, []);
 
+  const recordConversionEvent = useCallback((record: {
+    eventType: ConversionEventRecord["eventType"];
+    plan?: ConversionEventRecord["plan"];
+    source: string;
+    targetSlug: string;
+    targetTitle: string;
+  }) => {
+    const current = readHistorySnapshot();
+    const occurredAt = new Date().toISOString();
+
+    writeHistory(
+      mergeLearningHistory(current, {
+        conversionEvents: [
+          {
+            eventType: record.eventType,
+            occurredAt,
+            plan: record.plan ?? null,
+            source: record.source,
+            targetSlug: record.targetSlug,
+            targetTitle: record.targetTitle,
+          },
+        ],
+        lessonCompletions: [],
+        quizAttempts: [],
+        tutorPrompts: [],
+      }),
+    );
+
+    persistActivity({
+      eventType: record.eventType,
+      lessonSlug: record.targetSlug,
+      lessonTitle: record.targetTitle,
+      occurredAt,
+      plan: record.plan ?? null,
+      source: record.source,
+      targetSlug: record.targetSlug,
+      targetTitle: record.targetTitle,
+      type: "conversion_event",
+    });
+  }, []);
+
   return {
+    conversionEvents: history.conversionEvents,
     lessonCompletions: history.lessonCompletions,
     quizAttempts: history.quizAttempts,
     tutorPrompts: history.tutorPrompts,
+    recordConversionEvent,
     recordLessonCompleted,
     recordQuizAttempt,
     recordTutorPrompt,

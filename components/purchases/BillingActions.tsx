@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+
+import { useLearningHistory } from "@/hooks/useLearningHistory";
 
 type PlanKey = "pro_monthly" | "pro_yearly";
 
@@ -16,6 +18,7 @@ export function BillingActions({
   canOpenPortal,
   checkoutLabel,
 }: BillingActionsProps) {
+  const { recordConversionEvent } = useLearningHistory();
   const searchParams = useSearchParams();
   const [loadingAction, setLoadingAction] = useState<
     PlanKey | "portal" | null
@@ -23,7 +26,7 @@ export function BillingActions({
   const [error, setError] = useState<string | null>(null);
   const hasAutoStartedRef = useRef(false);
 
-  async function startCheckout(plan: PlanKey) {
+  const startCheckout = useCallback(async (plan: PlanKey) => {
     setLoadingAction(plan);
     setError(null);
 
@@ -44,15 +47,23 @@ export function BillingActions({
         return;
       }
 
+      recordConversionEvent({
+        eventType: "checkout_start",
+        plan,
+        source: "billing_actions",
+        targetSlug: "/purchases",
+        targetTitle: `Checkout ${plan === "pro_monthly" ? "Pro monthly" : "Pro yearly"}`,
+      });
+
       window.location.assign(payload.checkoutUrl);
     } catch {
       setError("Unable to start checkout right now.");
     } finally {
       setLoadingAction(null);
     }
-  }
+  }, [recordConversionEvent]);
 
-  async function openPortal() {
+  const openPortal = useCallback(async () => {
     setLoadingAction("portal");
     setError(null);
 
@@ -75,7 +86,7 @@ export function BillingActions({
     } finally {
       setLoadingAction(null);
     }
-  }
+  }, []);
 
   useEffect(() => {
     const requestedPlan = searchParams.get("plan");
@@ -90,7 +101,7 @@ export function BillingActions({
 
     hasAutoStartedRef.current = true;
     void startCheckout(requestedPlan);
-  }, [canCheckout, searchParams]);
+  }, [canCheckout, searchParams, startCheckout]);
 
   return (
     <div className="space-y-4">

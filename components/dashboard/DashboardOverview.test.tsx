@@ -135,9 +135,11 @@ describe("DashboardOverview", () => {
     mockUseLessonProgress.mockReset();
     mockUseLearningHistory.mockReset();
     mockUseLearningHistory.mockReturnValue({
+      conversionEvents: [],
       lessonCompletions: [],
       quizAttempts: [],
       tutorPrompts: [],
+      recordConversionEvent: vi.fn(),
       recordLessonCompleted: vi.fn(),
       recordQuizAttempt: vi.fn(),
       recordTutorPrompt: vi.fn(),
@@ -198,6 +200,7 @@ describe("DashboardOverview", () => {
       markLessonCompleted: vi.fn(),
     });
     mockUseLearningHistory.mockReturnValue({
+      conversionEvents: [],
       lessonCompletions: [
         {
           lessonSlug: "what-is-bitcoin",
@@ -223,6 +226,7 @@ describe("DashboardOverview", () => {
           topic: "Bitcoin foundations",
         },
       ],
+      recordConversionEvent: vi.fn(),
       recordLessonCompleted: vi.fn(),
       recordQuizAttempt: vi.fn(),
       recordTutorPrompt: vi.fn(),
