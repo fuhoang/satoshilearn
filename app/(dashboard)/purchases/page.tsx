@@ -3,6 +3,7 @@ import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
 
 import { BillingActions } from "@/components/purchases/BillingActions";
+import { UpgradeFunnel } from "@/components/purchases/UpgradeFunnel";
 import { moduleConfig } from "@/content/config";
 import { getBillingContextForCurrentUser } from "@/lib/account-status";
 import { createPageMetadata } from "@/lib/seo";
@@ -177,6 +178,8 @@ export default async function PurchasesPage() {
             </section>
           </div>
         </section>
+
+        <UpgradeFunnel />
       </div>
     </main>
   );

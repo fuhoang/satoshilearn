@@ -13,6 +13,7 @@ describe("useLearningHistory", () => {
       if (!init || init.method === "GET") {
         return new Response(
           JSON.stringify({
+            conversionEvents: [],
             lessonCompletions: [],
             quizAttempts: [],
             tutorPrompts: [],
@@ -23,6 +24,7 @@ describe("useLearningHistory", () => {
 
       return new Response(
         JSON.stringify({
+          conversionEvents: [],
           lessonCompletions: [],
           quizAttempts: [],
           tutorPrompts: [],
@@ -61,6 +63,7 @@ describe("useLearningHistory", () => {
     expect(result.current.quizAttempts).toHaveLength(1);
     expect(result.current.lessonCompletions).toHaveLength(1);
     expect(result.current.tutorPrompts).toHaveLength(1);
+    expect(result.current.conversionEvents).toHaveLength(0);
     expect(result.current.tutorPrompts[0]).toMatchObject({
       prompt: "How does Bitcoin supply work?",
       responsePreview: null,
@@ -106,5 +109,34 @@ describe("useLearningHistory", () => {
     });
 
     expect(result.current.lessonCompletions).toHaveLength(1);
+  });
+
+  it("records conversion events", async () => {
+    const { useLearningHistory } = await loadHook();
+    const { result } = renderHook(() => useLearningHistory());
+
+    act(() => {
+      result.current.recordConversionEvent({
+        eventType: "upgrade_click",
+        source: "learn_overview_module_card",
+        targetSlug: "advanced-basics",
+        targetTitle: "Advanced Basics",
+      });
+    });
+
+    expect(result.current.conversionEvents).toHaveLength(1);
+    expect(result.current.conversionEvents[0]).toMatchObject({
+      eventType: "upgrade_click",
+      source: "learn_overview_module_card",
+      targetSlug: "advanced-basics",
+      targetTitle: "Advanced Basics",
+      plan: null,
+    });
+    expect(global.fetch).toHaveBeenLastCalledWith(
+      "/api/activity",
+      expect.objectContaining({
+        body: expect.stringContaining('"type":"conversion_event"'),
+      }),
+    );
   });
 });

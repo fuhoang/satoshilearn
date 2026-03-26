@@ -50,6 +50,9 @@ export default async function LearnModulePage({
     return (
       <ProFeatureGate
         eyebrow="Pro module"
+        source="locked_module_page"
+        targetSlug={currentModule.slug}
+        targetTitle={currentModule.title}
         title={`${currentModule.title} is part of Pro`}
         description="This module is reserved for Pro members. Upgrade to unlock advanced lessons, deeper tutor access, and the premium side of the curriculum."
       />

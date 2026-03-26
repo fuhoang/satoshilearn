@@ -21,6 +21,7 @@ describe("activity route", () => {
     const payload = await response.json();
 
     expect(payload).toEqual({
+      conversionEvents: [],
       lessonCompletions: [],
       quizAttempts: [],
       tutorPrompts: [],
@@ -97,6 +98,7 @@ describe("activity route", () => {
         attemptedAt: "2026-03-25T18:05:00.000Z",
       },
     ]);
+    expect(payload.conversionEvents).toEqual([]);
   });
 
   it("stores tutor prompts in the fallback cookie payload", async () => {
@@ -125,6 +127,40 @@ describe("activity route", () => {
         repliedAt: "2026-03-25T18:10:00.000Z",
         responsePreview: "Bitcoin supply is capped at 21 million.",
         topic: "Bitcoin foundations",
+      },
+    ]);
+    expect(payload.conversionEvents).toEqual([]);
+  });
+
+  it("stores conversion events in the fallback cookie payload", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/activity", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "conversion_event",
+          eventType: "upgrade_click",
+          source: "learn_overview_module_card",
+          targetSlug: "advanced-basics",
+          targetTitle: "Advanced Basics",
+          occurredAt: "2026-03-25T18:15:00.000Z",
+          plan: null,
+        }),
+      }),
+    );
+
+    const payload = await response.json();
+
+    expect(payload.conversionEvents).toEqual([
+      {
+        eventType: "upgrade_click",
+        occurredAt: "2026-03-25T18:15:00.000Z",
+        plan: null,
+        source: "learn_overview_module_card",
+        targetSlug: "advanced-basics",
+        targetTitle: "Advanced Basics",
       },
     ]);
   });

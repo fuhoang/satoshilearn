@@ -80,9 +80,11 @@ describe("LessonQuizGate", () => {
     mockUseLessonProgress.mockReset();
     mockUseLearningHistory.mockReset();
     mockUseLearningHistory.mockReturnValue({
+      conversionEvents: [],
       lessonCompletions: [],
       quizAttempts: [],
       tutorPrompts: [],
+      recordConversionEvent: vi.fn(),
       recordLessonCompleted: vi.fn(),
       recordQuizAttempt: vi.fn(),
       recordTutorPrompt: vi.fn(),
@@ -128,9 +130,11 @@ describe("LessonQuizGate", () => {
       markLessonCompleted,
     });
     mockUseLearningHistory.mockReturnValue({
+      conversionEvents: [],
       lessonCompletions: [],
       quizAttempts: [],
       tutorPrompts: [],
+      recordConversionEvent: vi.fn(),
       recordLessonCompleted,
       recordQuizAttempt,
       recordTutorPrompt: vi.fn(),

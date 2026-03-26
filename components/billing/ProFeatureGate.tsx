@@ -1,14 +1,42 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useRef } from "react";
+
+import { useLearningHistory } from "@/hooks/useLearningHistory";
 
 export function ProFeatureGate({
   eyebrow,
+  source,
+  targetSlug,
+  targetTitle,
   title,
   description,
 }: {
   eyebrow: string;
+  source: string;
+  targetSlug: string;
+  targetTitle: string;
   title: string;
   description: string;
 }) {
+  const { recordConversionEvent } = useLearningHistory();
+  const hasTrackedViewRef = useRef(false);
+
+  useEffect(() => {
+    if (hasTrackedViewRef.current) {
+      return;
+    }
+
+    hasTrackedViewRef.current = true;
+    recordConversionEvent({
+      eventType: "locked_view",
+      source,
+      targetSlug,
+      targetTitle,
+    });
+  }, [recordConversionEvent, source, targetSlug, targetTitle]);
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       <div className="mx-auto max-w-4xl px-6 py-16">
@@ -25,6 +53,14 @@ export function ProFeatureGate({
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               href="/purchases"
+              onClick={() =>
+                recordConversionEvent({
+                  eventType: "upgrade_click",
+                  source,
+                  targetSlug,
+                  targetTitle,
+                })
+              }
               className="inline-flex w-full items-center justify-center rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-black transition hover:bg-orange-400 sm:w-auto"
             >
               Upgrade to Pro

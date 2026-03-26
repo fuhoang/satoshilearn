@@ -20,8 +20,24 @@ export interface TutorPromptRecord {
   topic: string | null;
 }
 
+export type ConversionEventType =
+  | "locked_view"
+  | "upgrade_click"
+  | "checkout_start"
+  | "checkout_complete";
+
+export interface ConversionEventRecord {
+  eventType: ConversionEventType;
+  occurredAt: string;
+  plan: "pro_monthly" | "pro_yearly" | null;
+  source: string;
+  targetSlug: string;
+  targetTitle: string;
+}
+
 export interface LearningHistory {
   lessonCompletions: LessonCompletionRecord[];
   quizAttempts: QuizAttemptRecord[];
   tutorPrompts: TutorPromptRecord[];
+  conversionEvents: ConversionEventRecord[];
 }

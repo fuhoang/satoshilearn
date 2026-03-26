@@ -55,6 +55,9 @@ export default async function LearnLessonPage({
     return (
       <ProFeatureGate
         eyebrow="Pro lesson"
+        source="locked_lesson_page"
+        targetSlug={lesson.slug}
+        targetTitle={lesson.title}
         title={`${lesson.title} is part of Pro`}
         description="This lesson sits inside the premium side of the curriculum. Upgrade to continue into advanced lessons and get stronger tutor access."
       />

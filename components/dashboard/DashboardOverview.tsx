@@ -33,8 +33,10 @@ export function DashboardOverview({
   totalLessons,
 }: DashboardOverviewProps) {
   const { completedCount, completedLessonSlugs, loaded } = useLessonProgress();
-  const { lessonCompletions, quizAttempts, tutorPrompts } = useLearningHistory();
+  const { conversionEvents, lessonCompletions, quizAttempts, tutorPrompts } =
+    useLearningHistory();
   const learningAnalytics = getLearningAnalytics({
+    conversionEvents,
     lessonCompletions,
     quizAttempts,
     tutorPrompts,
