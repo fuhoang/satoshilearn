@@ -7,6 +7,24 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const PROGRESS_COOKIE = "satoshilearn-progress";
 
+async function getAuthenticatedProgressContext() {
+  const supabase = await createServerSupabaseClient();
+  const admin = createSupabaseAdminClient();
+
+  if (!supabase || !admin) {
+    return null;
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return {
+    admin,
+    user,
+  };
+}
+
 async function readCookieProgress() {
   const cookieStore = await cookies();
   const raw = cookieStore.get(PROGRESS_COOKIE)?.value;
@@ -43,16 +61,12 @@ async function writeCookieProgress(progress: typeof EMPTY_LESSON_PROGRESS) {
 }
 
 async function readSupabaseProgress() {
-  const supabase = await createServerSupabaseClient();
-  const admin = createSupabaseAdminClient();
+  const context = await getAuthenticatedProgressContext();
 
-  if (!supabase || !admin) {
+  if (!context) {
     return null;
   }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { admin, user } = context;
 
   if (!user) {
     return {
@@ -81,16 +95,12 @@ async function readSupabaseProgress() {
 }
 
 async function writeSupabaseProgress(progress: typeof EMPTY_LESSON_PROGRESS) {
-  const supabase = await createServerSupabaseClient();
-  const admin = createSupabaseAdminClient();
+  const context = await getAuthenticatedProgressContext();
 
-  if (!supabase || !admin) {
+  if (!context) {
     return null;
   }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { admin, user } = context;
 
   if (!user) {
     return {
@@ -159,6 +169,7 @@ async function writeSupabaseProgress(progress: typeof EMPTY_LESSON_PROGRESS) {
       return response;
     })(),
     saved: true,
+    user,
     userId: user.id,
   };
 }
@@ -216,12 +227,8 @@ export async function POST(request: Request) {
     return supabaseWrite.response;
   }
 
-  const authSupabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = authSupabase
-    ? await authSupabase.auth.getUser()
-    : { data: { user: null } };
+  const context = await getAuthenticatedProgressContext();
+  const user = context?.user ?? null;
 
   if (user) {
     return NextResponse.json(
