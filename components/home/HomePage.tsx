@@ -56,6 +56,8 @@ const PRICING_PLANS = [
     description:
       "Full curriculum, more AI usage, quizzes, progress tracking, and deeper security lessons.",
     footnote: null,
+    cta: "Start monthly plan",
+    href: "/purchases?plan=pro_monthly" as Route,
   },
   {
     name: "Yearly plan",
@@ -64,6 +66,8 @@ const PRICING_PLANS = [
     description:
       "Full curriculum, more AI usage, quizzes, progress tracking, and deeper security lessons with a fixed annual price.",
     footnote: "Save compared with the monthly plan.",
+    cta: "Start yearly plan",
+    href: "/purchases?plan=pro_yearly" as Route,
   },
 ] as const;
 
@@ -380,10 +384,10 @@ export default function HomePage() {
                   {plan.description}
                 </p>
                 <Link
-                  href="/pricing"
+                  href={plan.href}
                   className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-black transition hover:bg-orange-400"
                 >
-                  Buy Now
+                  {plan.cta}
                 </Link>
                 {plan.footnote ? (
                   <p className="mt-3 text-center text-xs text-zinc-500">
