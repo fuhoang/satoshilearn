@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { unstable_noStore as noStore } from "next/cache";
 
 import { BillingActions } from "@/components/purchases/BillingActions";
 import { moduleConfig } from "@/content/config";
@@ -14,6 +15,8 @@ export const metadata: Metadata = createPageMetadata({
 });
 
 export default async function PurchasesPage() {
+  noStore();
+
   const { accountStatus, billingSnapshot, profile, priceMap } =
     await getBillingContextForCurrentUser();
   const purchaseCount = billingSnapshot.purchaseEvents.length;

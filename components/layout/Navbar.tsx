@@ -1,3 +1,5 @@
+import { unstable_noStore as noStore } from "next/cache";
+
 import { getAuthenticatedUser } from "@/lib/auth";
 import { getAccountStatusForCurrentUser } from "@/lib/account-status";
 import { getProfileSummary } from "@/lib/profile";
@@ -5,6 +7,8 @@ import { getProfileSummary } from "@/lib/profile";
 import { NavbarClient } from "@/components/layout/NavbarClient";
 
 export async function Navbar() {
+  noStore();
+
   const user = await getAuthenticatedUser();
   const [profileSummary, accountStatus] = user
     ? await Promise.all([

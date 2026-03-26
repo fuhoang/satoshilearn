@@ -1,4 +1,5 @@
 import type Stripe from "stripe";
+import { unstable_noStore as noStore } from "next/cache";
 
 import { absoluteUrl } from "@/lib/seo";
 import { getProfileSummary } from "@/lib/profile";
@@ -166,9 +167,12 @@ export function getAccountStatus(snapshot: BillingSnapshot): AccountStatus {
 }
 
 export async function getBillingSnapshotForCurrentUser(): Promise<BillingSnapshot> {
-  const supabase = await createServerSupabaseClient();
+  noStore();
 
-  if (!supabase) {
+  const supabase = await createServerSupabaseClient();
+  const admin = createSupabaseAdminClient();
+
+  if (!supabase || !admin) {
     return getDefaultBillingSnapshot();
   }
 
@@ -182,15 +186,15 @@ export async function getBillingSnapshotForCurrentUser(): Promise<BillingSnapsho
 
   const [{ data: profile }, { data: subscription }, { data: purchaseEvents }] =
     await Promise.all([
-      supabase.from("profiles").select("stripe_customer_id").eq("id", user.id).single(),
-      supabase
+      admin.from("profiles").select("stripe_customer_id").eq("id", user.id).single(),
+      admin
         .from("subscriptions")
         .select(
           "user_id, stripe_customer_id, stripe_subscription_id, stripe_price_id, plan_slug, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at",
         )
         .eq("user_id", user.id)
         .maybeSingle(),
-      supabase
+      admin
         .from("purchase_events")
         .select(
           "id, user_id, subscription_id, stripe_invoice_id, stripe_checkout_session_id, event_type, amount_cents, currency, status, created_at",
