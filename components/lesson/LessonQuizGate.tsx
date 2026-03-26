@@ -31,7 +31,14 @@ export function LessonQuizGate({
   const [checked, setChecked] = useState(false);
   const [passed, setPassed] = useState(false);
   const [skipped, setSkipped] = useState(false);
-  const { isLessonCompleted, loaded, markLessonCompleted } = useLessonProgress();
+  const {
+    isLessonCompleted,
+    loaded,
+    markLessonCompleted,
+    retryLastSave,
+    saveError,
+    saveState,
+  } = useLessonProgress();
   const { recordLessonCompleted, recordQuizAttempt } = useLearningHistory();
   const completed = isLessonCompleted(lessonSlug);
   const quizPassed = completed || passed;
@@ -89,8 +96,27 @@ export function LessonQuizGate({
             You can move on, or review the key ideas again.
           </h2>
           <p className="mt-3 text-sm leading-7 text-zinc-200">
-            Your progress has been saved{loaded ? " and synced." : "."}
+            {saveState === "error"
+              ? "This lesson is complete here, but the save failed. Retry to keep it across refreshes and devices."
+              : saveState === "saving"
+                ? "Your progress is being saved now."
+                : `Your progress has been saved${loaded ? " and synced." : "."}`}
           </p>
+          {saveState === "error" ? (
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <Button
+                className="bg-white text-black hover:bg-zinc-200"
+                onClick={retryLastSave}
+                type="button"
+                variant="secondary"
+              >
+                Retry save
+              </Button>
+              {saveError ? (
+                <p className="text-sm text-red-200">{saveError}</p>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
       <section className="space-y-6">
@@ -147,9 +173,17 @@ export function LessonQuizGate({
               Skip for now
             </button>
           ) : null}
-          {!loaded ? (
-            <p className="mt-3 text-center text-xs uppercase tracking-[0.16em] text-zinc-500">
-              Syncing progress...
+          {!loaded || saveState === "saving" || saveState === "error" ? (
+            <p
+              className={`mt-3 text-center text-xs uppercase tracking-[0.16em] ${
+                saveState === "error" ? "text-red-300" : "text-zinc-500"
+              }`}
+            >
+              {!loaded
+                ? "Syncing progress..."
+                : saveState === "saving"
+                  ? "Saving progress..."
+                  : "Progress save failed"}
             </p>
           ) : null}
         </div>

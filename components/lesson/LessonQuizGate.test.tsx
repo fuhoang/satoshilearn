@@ -95,6 +95,9 @@ describe("LessonQuizGate", () => {
       completedCount: 0,
       isLessonCompleted: () => false,
       markLessonCompleted: vi.fn(),
+      retryLastSave: vi.fn(),
+      saveError: null,
+      saveState: "idle",
     });
   });
 
@@ -128,6 +131,9 @@ describe("LessonQuizGate", () => {
       completedCount: 0,
       isLessonCompleted: () => false,
       markLessonCompleted,
+      retryLastSave: vi.fn(),
+      saveError: null,
+      saveState: "idle",
     });
     mockUseLearningHistory.mockReturnValue({
       conversionEvents: [],
@@ -170,5 +176,34 @@ describe("LessonQuizGate", () => {
     expect(screen.getByText("Lesson complete")).toBeInTheDocument();
     const nextLink = screen.getByText("What Is Bitcoin?").closest("a");
     expect(nextLink).toHaveAttribute("href", "/learn/what-is-bitcoin");
+  });
+
+  it("shows a retry action when progress saving fails after completion", () => {
+    const retryLastSave = vi.fn();
+
+    mockUseLessonProgress.mockReturnValue({
+      loaded: true,
+      completedLessonSlugs: ["lesson-a"],
+      completedCount: 1,
+      isLessonCompleted: (slug: string) => slug === "lesson-a",
+      markLessonCompleted: vi.fn(),
+      retryLastSave,
+      saveError: "Unable to save progress right now.",
+      saveState: "error",
+    });
+
+    render(
+      <LessonQuizGate
+        lessonSlug="lesson-a"
+        lessonTitle="Lesson A"
+        next={nextLesson}
+        previous={previousLesson}
+        questions={questions}
+      />,
+    );
+
+    expect(screen.getByText("Progress save failed")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Retry save" }));
+    expect(retryLastSave).toHaveBeenCalled();
   });
 });

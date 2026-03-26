@@ -75,10 +75,14 @@ describe("useLessonProgress", () => {
 
     expect(result.current.completedCount).toBe(1);
     expect(result.current.isLessonCompleted("what-is-money")).toBe(true);
+    expect(result.current.saveState).toBe("saving");
     await waitFor(() => {
       expect(
         window.localStorage.getItem("satoshilearn.lesson-progress:user-1"),
       ).toBe(JSON.stringify({ completedLessonSlugs: ["what-is-money"] }));
+    });
+    await waitFor(() => {
+      expect(result.current.saveState).toBe("idle");
     });
 
     await waitFor(() => {
@@ -120,6 +124,77 @@ describe("useLessonProgress", () => {
 
     expect(result.current.completedLessonSlugs).toEqual(["what-is-money"]);
     expect(result.current.completedCount).toBe(1);
+  });
+
+  it("exposes a save error and retries the pending save", async () => {
+    let postAttempts = 0;
+    const fetchMock = vi
+      .spyOn(global, "fetch")
+      .mockImplementation(async (_input, init) => {
+        if (!init || init.method === "GET") {
+          return new Response(
+            JSON.stringify({ completedLessonSlugs: [] }),
+            {
+              status: 200,
+              headers: {
+                "x-progress-viewer-id": "user-1",
+              },
+            },
+          );
+        }
+
+        postAttempts += 1;
+
+        if (postAttempts === 1) {
+          return new Response(
+            JSON.stringify({ error: "Unable to save progress right now." }),
+            { status: 500 },
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ completedLessonSlugs: ["what-is-money"] }),
+          {
+            status: 200,
+            headers: {
+              "x-progress-viewer-id": "user-1",
+            },
+          },
+        );
+      });
+
+    const { useLessonProgress } = await loadHook();
+    const { result } = renderHook(() => useLessonProgress());
+
+    await waitFor(() => {
+      expect(result.current.loaded).toBe(true);
+    });
+
+    act(() => {
+      result.current.markLessonCompleted("what-is-money");
+    });
+
+    await waitFor(() => {
+      expect(result.current.saveState).toBe("error");
+    });
+
+    expect(result.current.saveError).toBe("Unable to save progress right now.");
+
+    act(() => {
+      result.current.retryLastSave();
+    });
+
+    await waitFor(() => {
+      expect(result.current.saveState).toBe("idle");
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/progress", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ completedLessonSlugs: ["what-is-money"] }),
+    });
   });
 
   it("does not merge a previous browser user's local progress into the current account", async () => {

@@ -10,17 +10,22 @@ const STORAGE_EVENT = "satoshilearn-progress-change";
 
 type ProgressStore = LessonProgress & {
   loaded: boolean;
+  saveError: string | null;
+  saveState: "idle" | "saving" | "error";
 };
 
 const EMPTY_PROGRESS: ProgressStore = {
   ...EMPTY_LESSON_PROGRESS,
   loaded: false,
+  saveError: null,
+  saveState: "idle",
 };
 
 let cachedRawProgress = "";
 let cachedProgress: ProgressStore = EMPTY_PROGRESS;
 let currentViewerId = "anonymous";
 let inFlightLoad: Promise<void> | null = null;
+let pendingProgress: LessonProgress | null = null;
 
 function getStorageKey(viewerId = currentViewerId) {
   return `satoshilearn.lesson-progress:${viewerId}`;
@@ -78,10 +83,26 @@ function readLocalProgress(): ProgressStore {
   return readStoredProgress(getStorageKey());
 }
 
-function writeProgress(progress: LessonProgress, loaded = true, viewerId = currentViewerId) {
+function writeProgress(
+  progress: LessonProgress,
+  options: {
+    loaded?: boolean;
+    saveError?: string | null;
+    saveState?: ProgressStore["saveState"];
+    viewerId?: string;
+  } = {},
+) {
+  const {
+    loaded = true,
+    saveError = cachedProgress.saveError,
+    saveState = cachedProgress.saveState,
+    viewerId = currentViewerId,
+  } = options;
   const nextProgress: ProgressStore = {
     ...progress,
     loaded,
+    saveError,
+    saveState,
   };
   const raw = JSON.stringify(progress);
 
@@ -94,6 +115,18 @@ function writeProgress(progress: LessonProgress, loaded = true, viewerId = curre
     window.localStorage.removeItem(LEGACY_STORAGE_KEY);
     notifyProgressChange();
   }
+}
+
+function updateSaveState(
+  saveState: ProgressStore["saveState"],
+  saveError: string | null = null,
+) {
+  cachedProgress = {
+    ...cachedProgress,
+    saveError,
+    saveState,
+  };
+  notifyProgressChange();
 }
 
 function loadProgressSnapshot(): ProgressStore {
@@ -131,7 +164,13 @@ async function persistProgress(progress: LessonProgress) {
 
   const viewerId = response.headers.get("x-progress-viewer-id") ?? "anonymous";
   const payload = sanitizeLessonProgress(await response.json());
-  writeProgress(payload, true, viewerId);
+  pendingProgress = null;
+  writeProgress(payload, {
+    loaded: true,
+    saveError: null,
+    saveState: "idle",
+    viewerId,
+  });
 }
 
 async function loadRemoteProgress() {
@@ -152,13 +191,21 @@ async function loadRemoteProgress() {
     ],
   });
 
-  writeProgress(merged, true, viewerId);
+  writeProgress(merged, {
+    loaded: true,
+    saveError: null,
+    saveState: "idle",
+    viewerId,
+  });
 
   if (viewerId !== "anonymous" && !sameProgress(merged, payload)) {
+    pendingProgress = merged;
+    updateSaveState("saving");
+
     try {
       await persistProgress(merged);
     } catch {
-      // Keep the merged local cache even if the retry fails; the next load can retry.
+      updateSaveState("error", "Unable to save progress right now.");
     }
   }
 }
@@ -170,6 +217,8 @@ function ensureRemoteProgressLoaded() {
         cachedProgress = {
           ...readLocalProgress(),
           loaded: true,
+          saveError: null,
+          saveState: "idle",
         };
         notifyProgressChange();
       })
@@ -216,8 +265,26 @@ export function useLessonProgress() {
       completedLessonSlugs: [...current.completedLessonSlugs, slug],
     };
 
-    writeProgress(next);
-    void persistProgress(next).catch(() => undefined);
+    pendingProgress = next;
+    writeProgress(next, {
+      loaded: true,
+      saveError: null,
+      saveState: "saving",
+    });
+    void persistProgress(next).catch(() => {
+      updateSaveState("error", "Unable to save progress right now.");
+    });
+  }, []);
+
+  const retryLastSave = useCallback(() => {
+    if (!pendingProgress) {
+      return;
+    }
+
+    updateSaveState("saving");
+    void persistProgress(pendingProgress).catch(() => {
+      updateSaveState("error", "Unable to save progress right now.");
+    });
   }, []);
 
   const isLessonCompleted = useCallback(
@@ -236,5 +303,8 @@ export function useLessonProgress() {
     completedCount,
     isLessonCompleted,
     markLessonCompleted,
+    retryLastSave,
+    saveError: progress.saveError,
+    saveState: progress.saveState,
   };
 }
