@@ -71,6 +71,8 @@ function readStoredProgress(storageKey: string): ProgressStore {
     cachedProgress = {
       ...normalized,
       loaded: cachedProgress.loaded,
+      saveError: cachedProgress.saveError,
+      saveState: cachedProgress.saveState,
     };
 
     return cachedProgress;
