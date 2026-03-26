@@ -2,9 +2,28 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { EMPTY_LESSON_PROGRESS, sanitizeLessonProgress } from "@/lib/progress";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const PROGRESS_COOKIE = "satoshilearn-progress";
+
+async function getAuthenticatedProgressContext() {
+  const supabase = await createServerSupabaseClient();
+  const admin = createSupabaseAdminClient();
+
+  if (!supabase || !admin) {
+    return null;
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return {
+    admin,
+    user,
+  };
+}
 
 async function readCookieProgress() {
   const cookieStore = await cookies();
@@ -27,6 +46,7 @@ async function writeCookieProgress(progress: typeof EMPTY_LESSON_PROGRESS) {
     ...progress,
     updatedAt: new Date().toISOString(),
   });
+  response.headers.set("x-progress-viewer-id", "anonymous");
 
   response.cookies.set(PROGRESS_COOKIE, JSON.stringify(progress), {
     // The fallback cookie is API-owned state, not client-owned application state.
@@ -41,24 +61,22 @@ async function writeCookieProgress(progress: typeof EMPTY_LESSON_PROGRESS) {
 }
 
 async function readSupabaseProgress() {
-  const supabase = await createServerSupabaseClient();
+  const context = await getAuthenticatedProgressContext();
 
-  if (!supabase) {
+  if (!context) {
     return null;
   }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { admin, user } = context;
 
   if (!user) {
     return {
       progress: EMPTY_LESSON_PROGRESS,
       persisted: false,
+      userId: null,
     };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await admin
     .from("lesson_progress")
     .select("lesson_slug")
     .eq("user_id", user.id);
@@ -72,19 +90,17 @@ async function readSupabaseProgress() {
       completedLessonSlugs: data.map((row) => row.lesson_slug),
     }),
     persisted: true,
+    userId: user.id,
   };
 }
 
 async function writeSupabaseProgress(progress: typeof EMPTY_LESSON_PROGRESS) {
-  const supabase = await createServerSupabaseClient();
+  const context = await getAuthenticatedProgressContext();
 
-  if (!supabase) {
+  if (!context) {
     return null;
   }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { admin, user } = context;
 
   if (!user) {
     return {
@@ -93,11 +109,12 @@ async function writeSupabaseProgress(progress: typeof EMPTY_LESSON_PROGRESS) {
         { status: 401 },
       ),
       saved: false,
+      userId: null,
     };
   }
 
   const nextSlugs = progress.completedLessonSlugs;
-  const { data: existingRows, error: existingError } = await supabase
+  const { data: existingRows, error: existingError } = await admin
     .from("lesson_progress")
     .select("lesson_slug")
     .eq("user_id", user.id);
@@ -111,7 +128,7 @@ async function writeSupabaseProgress(progress: typeof EMPTY_LESSON_PROGRESS) {
     .filter((slug) => !nextSlugs.includes(slug));
 
   const deleteQuery = staleSlugs.length
-    ? supabase
+    ? admin
         .from("lesson_progress")
         .delete()
         .eq("user_id", user.id)
@@ -126,7 +143,7 @@ async function writeSupabaseProgress(progress: typeof EMPTY_LESSON_PROGRESS) {
   }
 
   if (nextSlugs.length > 0) {
-    const { error: upsertError } = await supabase.from("lesson_progress").upsert(
+    const { error: upsertError } = await admin.from("lesson_progress").upsert(
       nextSlugs.map((slug) => ({
         lesson_slug: slug,
         user_id: user.id,
@@ -142,12 +159,18 @@ async function writeSupabaseProgress(progress: typeof EMPTY_LESSON_PROGRESS) {
   }
 
   return {
-    response: NextResponse.json({
-      saved: true,
-      ...progress,
-      updatedAt: new Date().toISOString(),
-    }),
+    response: (() => {
+      const response = NextResponse.json({
+        saved: true,
+        ...progress,
+        updatedAt: new Date().toISOString(),
+      });
+      response.headers.set("x-progress-viewer-id", user.id);
+      return response;
+    })(),
     saved: true,
+    user,
+    userId: user.id,
   };
 }
 
@@ -165,10 +188,14 @@ export async function GET() {
   const stored = await readSupabaseProgress();
 
   if (stored) {
-    return NextResponse.json(stored.progress);
+    const response = NextResponse.json(stored.progress);
+    response.headers.set("x-progress-viewer-id", stored.userId ?? "anonymous");
+    return response;
   }
 
-  return NextResponse.json(await readCookieProgress());
+  const response = NextResponse.json(await readCookieProgress());
+  response.headers.set("x-progress-viewer-id", "anonymous");
+  return response;
 }
 
 export async function POST(request: Request) {
@@ -198,6 +225,16 @@ export async function POST(request: Request) {
 
   if (supabaseWrite?.response) {
     return supabaseWrite.response;
+  }
+
+  const context = await getAuthenticatedProgressContext();
+  const user = context?.user ?? null;
+
+  if (user) {
+    return NextResponse.json(
+      { error: "Unable to save progress right now." },
+      { status: 500 },
+    );
   }
 
   return writeCookieProgress(next);

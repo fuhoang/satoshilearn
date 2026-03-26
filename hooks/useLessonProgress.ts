@@ -5,7 +5,7 @@ import { useCallback, useMemo, useSyncExternalStore } from "react";
 import { EMPTY_LESSON_PROGRESS, sanitizeLessonProgress } from "@/lib/progress";
 import type { LessonProgress } from "@/types/progress";
 
-const STORAGE_KEY = "satoshilearn.lesson-progress";
+const LEGACY_STORAGE_KEY = "satoshilearn.lesson-progress";
 const STORAGE_EVENT = "satoshilearn-progress-change";
 
 type ProgressStore = LessonProgress & {
@@ -19,7 +19,12 @@ const EMPTY_PROGRESS: ProgressStore = {
 
 let cachedRawProgress = "";
 let cachedProgress: ProgressStore = EMPTY_PROGRESS;
-let hasLoadedRemoteProgress = false;
+let currentViewerId = "anonymous";
+let inFlightLoad: Promise<void> | null = null;
+
+function getStorageKey(viewerId = currentViewerId) {
+  return `satoshilearn.lesson-progress:${viewerId}`;
+}
 
 function notifyProgressChange() {
   if (typeof window === "undefined") {
@@ -29,29 +34,23 @@ function notifyProgressChange() {
   window.dispatchEvent(new Event(STORAGE_EVENT));
 }
 
-function writeProgress(progress: LessonProgress, loaded = true) {
-  const nextProgress: ProgressStore = {
-    ...progress,
-    loaded,
-  };
-  const raw = JSON.stringify(progress);
-
-  cachedRawProgress = raw;
-  cachedProgress = nextProgress;
-
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem(STORAGE_KEY, raw);
-    notifyProgressChange();
+function setViewer(viewerId: string) {
+  if (viewerId === currentViewerId) {
+    return;
   }
+
+  currentViewerId = viewerId;
+  cachedRawProgress = "";
+  cachedProgress = EMPTY_PROGRESS;
 }
 
-function readLocalProgress(): ProgressStore {
+function readStoredProgress(storageKey: string): ProgressStore {
   if (typeof window === "undefined") {
     return EMPTY_PROGRESS;
   }
 
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(storageKey);
 
     if (!raw) {
       return cachedProgress;
@@ -75,6 +74,28 @@ function readLocalProgress(): ProgressStore {
   }
 }
 
+function readLocalProgress(): ProgressStore {
+  return readStoredProgress(getStorageKey());
+}
+
+function writeProgress(progress: LessonProgress, loaded = true, viewerId = currentViewerId) {
+  const nextProgress: ProgressStore = {
+    ...progress,
+    loaded,
+  };
+  const raw = JSON.stringify(progress);
+
+  currentViewerId = viewerId;
+  cachedRawProgress = raw;
+  cachedProgress = nextProgress;
+
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(getStorageKey(viewerId), raw);
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+    notifyProgressChange();
+  }
+}
+
 function loadProgressSnapshot(): ProgressStore {
   const local = readLocalProgress();
 
@@ -83,6 +104,81 @@ function loadProgressSnapshot(): ProgressStore {
   }
 
   return cachedProgress;
+}
+
+function sameProgress(left: LessonProgress, right: LessonProgress) {
+  if (left.completedLessonSlugs.length !== right.completedLessonSlugs.length) {
+    return false;
+  }
+
+  return left.completedLessonSlugs.every(
+    (slug, index) => slug === right.completedLessonSlugs[index],
+  );
+}
+
+async function persistProgress(progress: LessonProgress) {
+  const response = await fetch("/api/progress", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(progress),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to save progress");
+  }
+
+  const viewerId = response.headers.get("x-progress-viewer-id") ?? "anonymous";
+  const payload = sanitizeLessonProgress(await response.json());
+  writeProgress(payload, true, viewerId);
+}
+
+async function loadRemoteProgress() {
+  const response = await fetch("/api/progress", { method: "GET", cache: "no-store" });
+
+  if (!response.ok) {
+    throw new Error("Failed to load progress");
+  }
+
+  const viewerId = response.headers.get("x-progress-viewer-id") ?? "anonymous";
+  setViewer(viewerId);
+  const payload = sanitizeLessonProgress(await response.json());
+  const local = readStoredProgress(getStorageKey(viewerId));
+  const merged = sanitizeLessonProgress({
+    completedLessonSlugs: [
+      ...payload.completedLessonSlugs,
+      ...local.completedLessonSlugs,
+    ],
+  });
+
+  writeProgress(merged, true, viewerId);
+
+  if (viewerId !== "anonymous" && !sameProgress(merged, payload)) {
+    try {
+      await persistProgress(merged);
+    } catch {
+      // Keep the merged local cache even if the retry fails; the next load can retry.
+    }
+  }
+}
+
+function ensureRemoteProgressLoaded() {
+  if (!inFlightLoad) {
+    inFlightLoad = loadRemoteProgress()
+      .catch(() => {
+        cachedProgress = {
+          ...readLocalProgress(),
+          loaded: true,
+        };
+        notifyProgressChange();
+      })
+      .finally(() => {
+        inFlightLoad = null;
+      });
+  }
+
+  return inFlightLoad;
 }
 
 function subscribe(callback: () => void) {
@@ -94,50 +190,12 @@ function subscribe(callback: () => void) {
 
   window.addEventListener("storage", handleChange);
   window.addEventListener(STORAGE_EVENT, handleChange);
-
-  if (!hasLoadedRemoteProgress) {
-    hasLoadedRemoteProgress = true;
-
-    // Keep the external-store snapshot stable unless the progress payload changed.
-    void fetch("/api/progress", { method: "GET", cache: "no-store" })
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error("Failed to load progress");
-        }
-
-        const payload = sanitizeLessonProgress(await response.json());
-        const local = readLocalProgress();
-        const merged = {
-          completedLessonSlugs: Array.from(
-            new Set([...local.completedLessonSlugs, ...payload.completedLessonSlugs]),
-          ),
-        };
-
-        writeProgress(merged, true);
-      })
-      .catch(() => {
-        cachedProgress = {
-          ...readLocalProgress(),
-          loaded: true,
-        };
-        notifyProgressChange();
-      });
-  }
+  void ensureRemoteProgressLoaded();
 
   return () => {
     window.removeEventListener("storage", handleChange);
     window.removeEventListener(STORAGE_EVENT, handleChange);
   };
-}
-
-function persistProgress(progress: LessonProgress) {
-  void fetch("/api/progress", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(progress),
-  }).catch(() => undefined);
 }
 
 export function useLessonProgress() {
@@ -159,7 +217,7 @@ export function useLessonProgress() {
     };
 
     writeProgress(next);
-    persistProgress(next);
+    void persistProgress(next).catch(() => undefined);
   }, []);
 
   const isLessonCompleted = useCallback(
