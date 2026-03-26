@@ -51,7 +51,7 @@ const MODULES = moduleConfig.slice(0, 3).map((module, index) => ({
 const PRICING_PLANS = [
   {
     name: "Monthly plan",
-    price: "GBP12",
+    price: "£14.99",
     cadence: "/month",
     description:
       "Full curriculum, more AI usage, quizzes, progress tracking, and deeper security lessons.",
@@ -61,7 +61,7 @@ const PRICING_PLANS = [
   },
   {
     name: "Yearly plan",
-    price: "GBP120",
+    price: "£149.99",
     cadence: "/year",
     description:
       "Full curriculum, more AI usage, quizzes, progress tracking, and deeper security lessons with a fixed annual price.",
