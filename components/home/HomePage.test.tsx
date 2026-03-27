@@ -3,6 +3,14 @@ import type { ReactNode } from "react";
 
 import HomePage from "@/components/home/HomePage";
 
+vi.mock("@/components/billing/CheckoutButton", () => ({
+  CheckoutButton: ({
+    label,
+  }: {
+    label: string;
+  }) => <button type="button">{label}</button>,
+}));
+
 vi.mock("next/link", () => ({
   default: ({
     children,
@@ -139,5 +147,23 @@ describe("HomePage", () => {
     expect(screen.getAllByText("Read guide")).toHaveLength(6);
     expect(screen.getByText("Monthly plan")).toBeInTheDocument();
     expect(screen.getByText("Yearly plan")).toBeInTheDocument();
+  });
+
+  it("disables the monthly CTA when the user is already on Pro monthly", () => {
+    render(<HomePage currentPlanSlug="pro_monthly" />);
+
+    expect(screen.getByText("Current subscription")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Upgrade to yearly" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows a downgrade CTA for monthly when the user is on Pro yearly", () => {
+    render(<HomePage currentPlanSlug="pro_yearly" />);
+
+    expect(
+      screen.getByRole("button", { name: "Downgrade to monthly" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Current subscription")).toBeInTheDocument();
   });
 });

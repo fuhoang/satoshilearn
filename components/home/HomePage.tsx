@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Route } from "next";
 import Link from "next/link";
 
+import { CheckoutButton } from "@/components/billing/CheckoutButton";
 import { moduleConfig } from "@/content/config";
 import { publicGuides } from "@/lib/public-guides";
 import { SoftAurora } from "@/components/home/SoftAurora";
@@ -57,7 +58,7 @@ const PRICING_PLANS = [
       "Full curriculum, more AI usage, quizzes, progress tracking, and deeper security lessons.",
     footnote: null,
     cta: "Start monthly plan",
-    href: "/purchases?plan=pro_monthly" as Route,
+    plan: "pro_monthly" as const,
   },
   {
     name: "Yearly plan",
@@ -67,9 +68,13 @@ const PRICING_PLANS = [
       "Full curriculum, more AI usage, quizzes, progress tracking, and deeper security lessons with a fixed annual price.",
     footnote: "Save compared with the monthly plan.",
     cta: "Start yearly plan",
-    href: "/purchases?plan=pro_yearly" as Route,
+    plan: "pro_yearly" as const,
   },
 ] as const;
+
+type HomePageProps = {
+  currentPlanSlug?: string | null;
+};
 
 const PUBLIC_GUIDES = publicGuides;
 const HOME_FAQ = [
@@ -95,7 +100,7 @@ const HOME_FAQ = [
   },
 ] as const;
 
-export default function HomePage() {
+export default function HomePage({ currentPlanSlug = null }: HomePageProps) {
   const [prompt, setPrompt] = useState("");
   const [submittedPrompt, setSubmittedPrompt] = useState("");
   const [promptVersion, setPromptVersion] = useState(0);
@@ -383,12 +388,21 @@ export default function HomePage() {
                 <p className="mt-4 text-sm leading-7 text-zinc-400">
                   {plan.description}
                 </p>
-                <Link
-                  href={plan.href}
-                  className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-black transition hover:bg-orange-400"
-                >
-                  {plan.cta}
-                </Link>
+                {isCurrentPlan(plan.plan, currentPlanSlug) ? (
+                  <span
+                    aria-disabled="true"
+                    className="mt-6 inline-flex w-full cursor-not-allowed items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-5 py-3 text-sm font-semibold text-emerald-200 opacity-90"
+                  >
+                    Current subscription
+                  </span>
+                ) : (
+                  <CheckoutButton
+                    className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-orange-500 px-5 py-3 text-sm font-semibold text-black transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-60"
+                    label={getPlanCtaLabel(plan.plan, currentPlanSlug, plan.cta)}
+                    loadingLabel="Opening checkout..."
+                    plan={plan.plan}
+                  />
+                )}
                 {plan.footnote ? (
                   <p className="mt-3 text-center text-xs text-zinc-500">
                     {plan.footnote}
@@ -401,4 +415,30 @@ export default function HomePage() {
       </section>
     </main>
   );
+}
+
+function isCurrentPlan(
+  plan: "pro_monthly" | "pro_yearly",
+  currentPlanSlug: string | null,
+) {
+  return (
+    (plan === "pro_monthly" && currentPlanSlug === "pro_monthly") ||
+    (plan === "pro_yearly" && currentPlanSlug === "pro_yearly")
+  );
+}
+
+function getPlanCtaLabel(
+  plan: "pro_monthly" | "pro_yearly",
+  currentPlanSlug: string | null,
+  defaultLabel: string,
+) {
+  if (plan === "pro_monthly" && currentPlanSlug === "pro_yearly") {
+    return "Downgrade to monthly";
+  }
+
+  if (plan === "pro_yearly" && currentPlanSlug === "pro_monthly") {
+    return "Upgrade to yearly";
+  }
+
+  return defaultLabel;
 }

@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { unstable_noStore as noStore } from "next/cache";
 
+import { CheckoutButton } from "@/components/billing/CheckoutButton";
+import { hasProAccess, getBillingSnapshotForCurrentUser } from "@/lib/billing";
 import { publicGuides } from "@/lib/public-guides";
 import { createPageMetadata } from "@/lib/seo";
+import type { BillingPlanSlug } from "@/types/billing";
 
 const plans = [
   {
@@ -30,7 +34,7 @@ const plans = [
     accent: "border-orange-500/30 bg-orange-500/10",
     badge: "Most flexible",
     ctaLabel: "Upgrade to Pro",
-    href: "/purchases?plan=pro_monthly",
+    plan: "pro_monthly" as const,
     features: [
       "Everything in Starter",
       "Expanded tutor access",
@@ -46,7 +50,7 @@ const plans = [
     accent: "border-emerald-400/30 bg-emerald-400/10",
     badge: "Best value",
     ctaLabel: "Choose yearly",
-    href: "/purchases?plan=pro_yearly",
+    plan: "pro_yearly" as const,
     features: [
       "Everything in Pro Monthly",
       "Lower annual cost than paying monthly",
@@ -63,7 +67,14 @@ export const metadata: Metadata = createPageMetadata({
   imagePath: "/pricing/opengraph-image",
 });
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  noStore();
+
+  const billingSnapshot = await getBillingSnapshotForCurrentUser();
+  const currentPlanSlug = hasProAccess(billingSnapshot)
+    ? billingSnapshot.subscription?.plan_slug ?? null
+    : null;
+
   return (
     <main className="min-h-screen bg-zinc-950 text-white">
       <section className="border-b border-white/10 px-6 py-16 sm:py-20">
@@ -123,18 +134,38 @@ export default function PricingPage() {
                   </div>
 
                   <div className="mt-auto pt-8">
-                    <Link
-                      href={plan.href}
-                      className={`inline-flex w-full items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold transition ${
-                        plan.name === "Free"
-                          ? "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                          : plan.name === "Pro Monthly"
-                            ? "bg-orange-500 text-black hover:bg-orange-400"
-                          : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                      }`}
-                    >
-                      {plan.ctaLabel}
-                    </Link>
+                    {isCurrentPlan(plan.name, currentPlanSlug) ? (
+                      <span
+                        aria-disabled="true"
+                        className="inline-flex w-full cursor-not-allowed items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-5 py-3 text-sm font-semibold text-emerald-200 opacity-90"
+                      >
+                        Current subscription
+                      </span>
+                    ) : (
+                      plan.name === "Free" ? (
+                        <Link
+                          href="/auth/register"
+                          className="inline-flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+                        >
+                          {plan.ctaLabel}
+                        </Link>
+                      ) : (
+                        <CheckoutButton
+                          className={`inline-flex w-full items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold transition ${
+                            plan.name === "Pro Monthly"
+                              ? "bg-orange-500 text-black hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-60"
+                              : "border border-white/10 bg-white/5 text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                          }`}
+                          label={getPlanCtaLabel(
+                            plan.name,
+                            currentPlanSlug,
+                            plan.ctaLabel,
+                          )}
+                          loadingLabel="Opening checkout..."
+                          plan={plan.plan}
+                        />
+                      )
+                    )}
                   </div>
                 </div>
               </article>
@@ -228,4 +259,35 @@ export default function PricingPage() {
       </section>
     </main>
   );
+}
+
+function isCurrentPlan(
+  planName: (typeof plans)[number]["name"],
+  currentPlanSlug: BillingPlanSlug | null,
+) {
+  if (planName === "Pro Monthly") {
+    return currentPlanSlug === "pro_monthly";
+  }
+
+  if (planName === "Pro Yearly") {
+    return currentPlanSlug === "pro_yearly";
+  }
+
+  return false;
+}
+
+function getPlanCtaLabel(
+  planName: (typeof plans)[number]["name"],
+  currentPlanSlug: BillingPlanSlug | null,
+  defaultLabel: string,
+) {
+  if (planName === "Pro Monthly" && currentPlanSlug === "pro_yearly") {
+    return "Downgrade to monthly";
+  }
+
+  if (planName === "Pro Yearly" && currentPlanSlug === "pro_monthly") {
+    return "Upgrade to yearly";
+  }
+
+  return defaultLabel;
 }

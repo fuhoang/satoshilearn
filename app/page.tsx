@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { unstable_noStore as noStore } from "next/cache";
 
 import HomePage from "@/components/home/HomePage";
+import { getBillingSnapshotForCurrentUser, hasProAccess } from "@/lib/billing";
 import { publicGuides } from "@/lib/public-guides";
 import { absoluteUrl, createPageMetadata } from "@/lib/seo";
 
@@ -12,7 +14,14 @@ export const metadata: Metadata = createPageMetadata({
   pathname: "/",
 });
 
-export default function Page() {
+export default async function Page() {
+  noStore();
+
+  const billingSnapshot = await getBillingSnapshotForCurrentUser();
+  const currentPlanSlug = hasProAccess(billingSnapshot)
+    ? billingSnapshot.subscription?.plan_slug ?? null
+    : null;
+
   const faq = [
     {
       question: "Is Blockwise for complete beginners?",
@@ -98,7 +107,7 @@ export default function Page() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      <HomePage />
+      <HomePage currentPlanSlug={currentPlanSlug} />
     </>
   );
 }

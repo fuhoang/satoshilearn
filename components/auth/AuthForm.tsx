@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/Button";
@@ -38,6 +38,11 @@ export function AuthForm({
   nextPath,
 }: AuthFormProps) {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
+  const isMounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
   const safeNextPath = sanitizeNextPath(nextPath);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -266,30 +271,47 @@ export function AuthForm({
       </div>
 
       <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-        <label className="block">
-          <span className="text-sm text-zinc-400">Email</span>
-          <input
-            autoComplete="email"
-            className="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-orange-500/40"
-            onChange={(event) => setEmail(event.target.value)}
-            required
-            type="email"
-            value={email}
-          />
-        </label>
+        {isMounted ? (
+          <>
+            <label className="block">
+              <span className="text-sm text-zinc-400">Email</span>
+              <input
+                autoComplete="email"
+                className="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-orange-500/40"
+                data-1p-ignore="true"
+                data-lpignore="true"
+                onChange={(event) => setEmail(event.target.value)}
+                required
+                type="email"
+                value={email}
+              />
+            </label>
 
-        <label className="block">
-          <span className="text-sm text-zinc-400">Password</span>
-          <input
-            autoComplete={mode === "login" ? "current-password" : "new-password"}
-            className="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-orange-500/40"
-            minLength={8}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-            type="password"
-            value={password}
-          />
-        </label>
+            <label className="block">
+              <span className="text-sm text-zinc-400">Password</span>
+              <input
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
+                className="mt-2 w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-orange-500/40"
+                data-1p-ignore="true"
+                data-lpignore="true"
+                minLength={8}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                type="password"
+                value={password}
+              />
+            </label>
+          </>
+        ) : (
+          <div className="space-y-4" aria-hidden="true">
+            <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-500">
+              Loading form fields...
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-500">
+              Loading form fields...
+            </div>
+          </div>
+        )}
 
         {mode === "login" ? (
           <div className="flex justify-end">
