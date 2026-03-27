@@ -234,11 +234,11 @@ export async function getBillingContextForCurrentUser() {
   };
 }
 
-export function getSuccessUrl(path = "/purchases?checkout=success") {
+export function getSuccessUrl(path = "/purchases/success") {
   return absoluteUrl(path);
 }
 
-export function getCancelUrl(path = "/purchases?checkout=canceled") {
+export function getCancelUrl(path = "/purchases/canceled") {
   return absoluteUrl(path);
 }
 

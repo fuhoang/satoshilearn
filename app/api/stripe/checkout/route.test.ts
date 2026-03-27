@@ -11,9 +11,9 @@ vi.mock("@/lib/stripe", () => ({
 
 vi.mock("@/lib/billing", () => ({
   ensureStripeCustomerForCurrentUser: () => ensureStripeCustomerForCurrentUser(),
-  getCancelUrl: () => "http://localhost:3000/purchases?checkout=canceled",
+  getCancelUrl: () => "http://localhost:3000/purchases/canceled",
   getPlanDetails: (plan: string) => getPlanDetails(plan),
-  getSuccessUrl: () => "http://localhost:3000/purchases?checkout=success",
+  getSuccessUrl: () => "http://localhost:3000/purchases/success",
 }));
 
 describe("stripe checkout route", () => {
@@ -96,8 +96,10 @@ describe("stripe checkout route", () => {
 
     expect(createSession).toHaveBeenCalledWith(
       expect.objectContaining({
+        cancel_url: "http://localhost:3000/purchases/canceled",
         customer: "cus_123",
         mode: "subscription",
+        success_url: "http://localhost:3000/purchases/success",
       }),
     );
     expect(response.status).toBe(200);
