@@ -6,6 +6,8 @@ import { LessonContent } from "@/components/lesson/LessonContent";
 import { LessonTutorPanel } from "@/components/lesson/LessonTutorPanel";
 import type { Lesson } from "@/types/lesson";
 
+const LESSON_TUTOR_OPEN_CLASS = "lesson-tutor-open";
+
 export function LessonWorkspace({
   keyPoints,
   lesson,
@@ -16,14 +18,10 @@ export function LessonWorkspace({
   const [isTutorOpen, setIsTutorOpen] = useState(false);
 
   useEffect(() => {
-    if (isTutorOpen) {
-      document.body.dataset.lessonTutorOpen = "true";
-    } else {
-      delete document.body.dataset.lessonTutorOpen;
-    }
+    document.body.classList.toggle(LESSON_TUTOR_OPEN_CLASS, isTutorOpen);
 
     return () => {
-      delete document.body.dataset.lessonTutorOpen;
+      document.body.classList.remove(LESSON_TUTOR_OPEN_CLASS);
     };
   }, [isTutorOpen]);
 

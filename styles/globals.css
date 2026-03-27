@@ -11,6 +11,7 @@
   --accent-soft: #fde6be;
   --surface-dark: #1c130d;
   --success: #0f766e;
+  --lesson-tutor-width: 28rem;
 }
 
 * {
@@ -34,8 +35,8 @@ body {
 }
 
 @media (min-width: 1280px) {
-  body[data-lesson-tutor-open="true"] {
-    padding-right: 28rem;
+  body.lesson-tutor-open {
+    padding-right: var(--lesson-tutor-width);
   }
 }
 

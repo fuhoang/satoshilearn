@@ -46,6 +46,7 @@ export function LessonTutorPanel({
           "fixed right-0 top-1/2 z-40 -translate-y-1/2 rounded-l-2xl border border-r-0 border-white/10 bg-black/85 px-4 py-4 text-left shadow-[0_20px_60px_rgba(0,0,0,0.35)] transition-all duration-300 hover:bg-black/95",
           isOpen && "pointer-events-none translate-x-3 opacity-0",
         )}
+        data-testid="lesson-tutor-launcher"
         type="button"
         onClick={() => onOpenChange(true)}
       >
@@ -68,9 +69,10 @@ export function LessonTutorPanel({
 
       <aside
         className={cn(
-          "fixed inset-y-0 right-0 z-50 flex h-[100dvh] w-full max-w-[28rem] flex-col border-l border-white/10 bg-zinc-950 text-white shadow-[-24px_0_80px_rgba(0,0,0,0.45)] transition-transform duration-300",
+          "fixed inset-y-0 right-0 z-50 flex h-[100dvh] w-full max-w-[var(--lesson-tutor-width)] flex-col border-l border-white/10 bg-zinc-950 text-white shadow-[-24px_0_80px_rgba(0,0,0,0.45)] transition-transform duration-300",
           isOpen ? "translate-x-0" : "translate-x-full",
         )}
+        data-testid="lesson-tutor-drawer"
       >
         <div className="border-b border-white/10 bg-white/[0.03] px-6 py-5">
           <div className="flex items-start justify-between gap-4">
