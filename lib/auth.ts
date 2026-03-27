@@ -1,7 +1,16 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-const protectedPrefixes = ["/dashboard", "/learn", "/profiles", "/purchases"];
-const authPrefixes = ["/auth/login", "/auth/register", "/auth/forgot-password"];
+export const protectedPrefixes = [
+  "/dashboard",
+  "/learn",
+  "/profiles",
+  "/purchases",
+] as const;
+export const authPrefixes = [
+  "/auth/login",
+  "/auth/register",
+  "/auth/forgot-password",
+] as const;
 
 export function routeRequiresAuth(pathname: string) {
   return protectedPrefixes.some((prefix) => pathname.startsWith(prefix));
