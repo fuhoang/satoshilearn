@@ -236,6 +236,7 @@ describe("critical flows smoke", () => {
 
     expect(screen.getByText("Pro monthly")).toBeInTheDocument();
     expect(screen.getByText("Checkout and portal actions")).toBeInTheDocument();
-    expect(screen.getByText("invoice.paid")).toBeInTheDocument();
+    expect(screen.getByText("Invoice Paid")).toBeInTheDocument();
+    expect(screen.getByText("14.99 GBP")).toBeInTheDocument();
   });
 });
