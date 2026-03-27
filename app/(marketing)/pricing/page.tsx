@@ -6,6 +6,7 @@ import { CheckoutButton } from "@/components/billing/CheckoutButton";
 import { hasProAccess, getBillingSnapshotForCurrentUser } from "@/lib/billing";
 import { publicGuides } from "@/lib/public-guides";
 import { createPageMetadata } from "@/lib/seo";
+import type { BillingPlanSlug } from "@/types/billing";
 
 const plans = [
   {
@@ -262,7 +263,7 @@ export default async function PricingPage() {
 
 function isCurrentPlan(
   planName: (typeof plans)[number]["name"],
-  currentPlanSlug: "pro_monthly" | "pro_yearly" | null,
+  currentPlanSlug: BillingPlanSlug | null,
 ) {
   if (planName === "Pro Monthly") {
     return currentPlanSlug === "pro_monthly";
@@ -277,7 +278,7 @@ function isCurrentPlan(
 
 function getPlanCtaLabel(
   planName: (typeof plans)[number]["name"],
-  currentPlanSlug: "pro_monthly" | "pro_yearly" | null,
+  currentPlanSlug: BillingPlanSlug | null,
   defaultLabel: string,
 ) {
   if (planName === "Pro Monthly" && currentPlanSlug === "pro_yearly") {
