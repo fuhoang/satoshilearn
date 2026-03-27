@@ -7,12 +7,15 @@ import { useChat } from "@/hooks/useChat";
 import { cn } from "@/lib/utils";
 
 export function LessonTutorPanel({
+  isOpen,
   lessonTitle,
+  onOpenChange,
 }: {
+  isOpen: boolean;
   lessonTitle: string;
+  onOpenChange: (nextOpen: boolean) => void;
 }) {
   const [draft, setDraft] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
   const { error, isLoading, messages, sendMessage, usage } = useChat();
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -30,7 +33,7 @@ export function LessonTutorPanel({
       return;
     }
 
-    setIsOpen(true);
+    onOpenChange(true);
     setDraft("");
     await sendMessage(nextPrompt);
   }
@@ -44,7 +47,7 @@ export function LessonTutorPanel({
           isOpen && "pointer-events-none translate-x-3 opacity-0",
         )}
         type="button"
-        onClick={() => setIsOpen(true)}
+        onClick={() => onOpenChange(true)}
       >
         <span className="block text-[11px] uppercase tracking-[0.2em] text-orange-300">
           AI tutor
@@ -57,15 +60,15 @@ export function LessonTutorPanel({
       <div
         aria-hidden={!isOpen}
         className={cn(
-          "fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px] transition-opacity duration-300",
+          "fixed inset-0 z-40 bg-black/35 transition-opacity duration-300 xl:bg-black/10",
           isOpen ? "opacity-100" : "pointer-events-none opacity-0",
         )}
-        onClick={() => setIsOpen(false)}
+        onClick={() => onOpenChange(false)}
       />
 
       <aside
         className={cn(
-          "fixed inset-y-0 right-0 z-50 flex h-[100dvh] w-full max-w-[44rem] flex-col border-l border-white/10 bg-zinc-950 text-white shadow-[-24px_0_80px_rgba(0,0,0,0.45)] transition-transform duration-300",
+          "fixed inset-y-0 right-0 z-50 flex h-[100dvh] w-full max-w-[28rem] flex-col border-l border-white/10 bg-zinc-950 text-white shadow-[-24px_0_80px_rgba(0,0,0,0.45)] transition-transform duration-300",
           isOpen ? "translate-x-0" : "translate-x-full",
         )}
       >
@@ -87,7 +90,7 @@ export function LessonTutorPanel({
               aria-label="Close tutor panel"
               className="rounded-full border border-white/10 bg-black/50 px-3 py-2 text-xs font-semibold text-zinc-300 transition hover:bg-white/10"
               type="button"
-              onClick={() => setIsOpen(false)}
+              onClick={() => onOpenChange(false)}
             >
               Close
             </button>
@@ -126,7 +129,7 @@ export function LessonTutorPanel({
               placeholder="Ask about this lesson..."
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
-              onFocus={() => setIsOpen(true)}
+              onFocus={() => onOpenChange(true)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
                   event.preventDefault();

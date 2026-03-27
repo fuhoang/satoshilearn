@@ -15,12 +15,6 @@ vi.mock("@/lib/account-status", () => ({
   hasProAccessForCurrentUser: () => hasProAccessForCurrentUser(),
 }));
 
-vi.mock("@/components/lesson/LessonContent", () => ({
-  LessonContent: ({ lesson }: { lesson: { title: string } }) => (
-    <div data-testid="lesson-content">{lesson.title}</div>
-  ),
-}));
-
 vi.mock("@/components/lesson/LessonHeader", () => ({
   LessonHeader: ({
     lesson,
@@ -55,9 +49,9 @@ vi.mock("@/components/lesson/LessonQuizGate", () => ({
   ),
 }));
 
-vi.mock("@/components/lesson/LessonTutorPanel", () => ({
-  LessonTutorPanel: ({ lessonTitle }: { lessonTitle: string }) => (
-    <div data-testid="lesson-tutor-panel">{lessonTitle}</div>
+vi.mock("@/components/lesson/LessonWorkspace", () => ({
+  LessonWorkspace: ({ lesson }: { lesson: { title: string } }) => (
+    <div data-testid="lesson-workspace">{lesson.title}</div>
   ),
 }));
 
@@ -91,11 +85,9 @@ describe("learn lesson page route", () => {
       "data-module-index",
       "0",
     );
-    expect(screen.getAllByText("What Is Money?")).toHaveLength(3);
+    expect(screen.getAllByText("What Is Money?")).toHaveLength(2);
     expect(screen.getByText("Foundations")).toBeInTheDocument();
-    expect(screen.getByTestId("lesson-tutor-panel")).toHaveTextContent(
-      "What Is Money?",
-    );
+    expect(screen.getByTestId("lesson-workspace")).toHaveTextContent("What Is Money?");
     expect(screen.getByTestId("lesson-quiz-gate")).toHaveAttribute(
       "data-question-count",
       "2",

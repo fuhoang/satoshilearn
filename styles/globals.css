@@ -30,6 +30,13 @@ body {
     linear-gradient(180deg, #fff8ee 0%, var(--background) 42%, #efe4d1 100%);
   color: var(--foreground);
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  transition: padding-right 300ms ease;
+}
+
+@media (min-width: 1280px) {
+  body[data-lesson-tutor-open="true"] {
+    padding-right: 28rem;
+  }
 }
 
 a {
