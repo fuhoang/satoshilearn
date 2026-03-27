@@ -1,6 +1,28 @@
 const cookieState = new Map<string, string>();
 const createServerSupabaseClient = vi.fn();
 const getUser = vi.fn();
+const insert = vi.fn();
+const maybeSingle = vi.fn();
+const limit = vi.fn();
+const order = vi.fn();
+const readEq = vi.fn();
+const duplicateEqUser = vi.fn();
+const duplicateEqType = vi.fn();
+const duplicateEqSlug = vi.fn();
+const select = vi.fn();
+const from = vi.fn();
+
+type LearningActivityRow = {
+  activity_context: string | null;
+  activity_type: string;
+  correct_count: number | null;
+  created_at: string;
+  lesson_slug: string;
+  lesson_title: string;
+  passed: boolean | null;
+  response_preview: string | null;
+  total_questions: number | null;
+};
 
 vi.mock("next/headers", () => ({
   cookies: async () => ({
@@ -14,6 +36,98 @@ vi.mock("next/headers", () => ({
 vi.mock("@/lib/supabase/server", () => ({
   createServerSupabaseClient: () => createServerSupabaseClient(),
 }));
+
+function configureSupabaseActivityClient(options?: {
+  existingCompletion?: { id: string } | null;
+  rows?: LearningActivityRow[];
+  userId?: string | null;
+}) {
+  const userId = options?.userId === undefined ? "user-1" : options.userId;
+  const rows = options?.rows ?? [];
+  const existingCompletion =
+    options?.existingCompletion === undefined ? null : options.existingCompletion;
+
+  getUser.mockResolvedValue({
+    data: {
+      user: userId ? { id: userId } : null,
+    },
+  });
+
+  maybeSingle.mockReset();
+  limit.mockReset();
+  order.mockReset();
+  readEq.mockReset();
+  duplicateEqUser.mockReset();
+  duplicateEqType.mockReset();
+  duplicateEqSlug.mockReset();
+  select.mockReset();
+  from.mockReset();
+  insert.mockReset();
+
+  maybeSingle.mockResolvedValue({
+    data: existingCompletion,
+    error: null,
+  });
+
+  limit.mockResolvedValue({
+    data: rows,
+    error: null,
+  });
+
+  order.mockReturnValue({
+    limit,
+  });
+
+  readEq.mockImplementation(() => {
+    return {
+      order,
+    };
+  });
+
+  duplicateEqSlug.mockImplementation(() => ({
+    maybeSingle,
+  }));
+
+  duplicateEqType.mockImplementation(() => ({
+    eq: duplicateEqSlug,
+  }));
+
+  duplicateEqUser.mockImplementation(() => ({
+    eq: duplicateEqType,
+  }));
+
+  select.mockImplementation((query: string) => {
+    if (query === "id") {
+      return {
+        eq: duplicateEqUser,
+      };
+    }
+
+    return {
+      eq: readEq,
+    };
+  });
+
+  insert.mockResolvedValue({ error: null });
+
+  from.mockImplementation((table: string) => {
+    if (table === "learning_activity") {
+      return {
+        insert,
+        select,
+      };
+    }
+
+    throw new Error(`Unexpected table: ${table}`);
+  });
+
+  createServerSupabaseClient.mockResolvedValue({
+    auth: {
+      getUser,
+    },
+    from,
+  });
+}
 
 describe("activity route", () => {
   beforeEach(() => {
@@ -178,13 +292,8 @@ describe("activity route", () => {
   });
 
   it("falls back to cookies for signed-out users even when Supabase is configured", async () => {
-    createServerSupabaseClient.mockResolvedValue({
-      auth: {
-        getUser,
-      },
-    });
-    getUser.mockResolvedValue({
-      data: { user: null },
+    configureSupabaseActivityClient({
+      userId: null,
     });
 
     const { POST } = await import("@/app/api/activity/route");
@@ -214,5 +323,108 @@ describe("activity route", () => {
         ],
       }),
     );
+  });
+
+  it("persists authenticated activity to Supabase and returns persisted history", async () => {
+    configureSupabaseActivityClient({
+      rows: [
+        {
+          activity_context: null,
+          activity_type: "lesson_completion",
+          correct_count: null,
+          created_at: "2026-03-25T18:00:00.000Z",
+          lesson_slug: "wallet-basics",
+          lesson_title: "Wallet Basics",
+          passed: null,
+          response_preview: null,
+          total_questions: null,
+        },
+      ],
+    });
+
+    const { POST } = await import("@/app/api/activity/route");
+    const response = await POST(
+      new Request("http://localhost/api/activity", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "lesson_completion",
+          lessonSlug: "wallet-basics",
+          lessonTitle: "Wallet Basics",
+          completedAt: "2026-03-25T18:00:00.000Z",
+        }),
+      }),
+    );
+
+    expect(insert).toHaveBeenCalledWith({
+      activity_type: "lesson_completion",
+      created_at: "2026-03-25T18:00:00.000Z",
+      lesson_slug: "wallet-basics",
+      lesson_title: "Wallet Basics",
+      user_id: "user-1",
+    });
+    expect(response.headers.get("set-cookie")).toBeNull();
+    await expect(response.json()).resolves.toEqual({
+      conversionEvents: [],
+      lessonCompletions: [
+        {
+          lessonSlug: "wallet-basics",
+          lessonTitle: "Wallet Basics",
+          completedAt: "2026-03-25T18:00:00.000Z",
+        },
+      ],
+      quizAttempts: [],
+      tutorPrompts: [],
+    });
+  });
+
+  it("returns existing persisted history instead of inserting duplicate lesson completions", async () => {
+    configureSupabaseActivityClient({
+      existingCompletion: { id: "activity-1" },
+      rows: [
+        {
+          activity_context: null,
+          activity_type: "lesson_completion",
+          correct_count: null,
+          created_at: "2026-03-25T18:00:00.000Z",
+          lesson_slug: "wallet-basics",
+          lesson_title: "Wallet Basics",
+          passed: null,
+          response_preview: null,
+          total_questions: null,
+        },
+      ],
+    });
+
+    const { POST } = await import("@/app/api/activity/route");
+    const response = await POST(
+      new Request("http://localhost/api/activity", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "lesson_completion",
+          lessonSlug: "wallet-basics",
+          lessonTitle: "Wallet Basics",
+        }),
+      }),
+    );
+
+    expect(insert).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toEqual({
+      conversionEvents: [],
+      lessonCompletions: [
+        {
+          lessonSlug: "wallet-basics",
+          lessonTitle: "Wallet Basics",
+          completedAt: "2026-03-25T18:00:00.000Z",
+        },
+      ],
+      quizAttempts: [],
+      tutorPrompts: [],
+    });
   });
 });
