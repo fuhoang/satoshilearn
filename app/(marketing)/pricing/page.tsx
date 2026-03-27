@@ -7,7 +7,7 @@ import { createPageMetadata } from "@/lib/seo";
 const plans = [
   {
     name: "Free",
-    price: "$0",
+    price: "£0",
     cadence: "forever",
     description:
       "Get the live Bitcoin curriculum, guided lessons, quizzes, and your learning dashboard at no cost.",
@@ -23,7 +23,7 @@ const plans = [
   },
   {
     name: "Pro Monthly",
-    price: "$14.99",
+    price: "£14.99",
     cadence: "per month",
     description:
       "Unlock premium billing access, future premium tracks, stronger tutor usage, and a flexible monthly subscription.",
@@ -39,7 +39,7 @@ const plans = [
   },
   {
     name: "Pro Yearly",
-    price: "$149.99",
+    price: "£149.99",
     cadence: "per year",
     description:
       "Get the same Pro access with a fixed annual price and the cleanest long-term plan for committed learners.",

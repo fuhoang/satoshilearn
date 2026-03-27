@@ -79,7 +79,7 @@ export function NavbarClient({
             aria-controls="mobile-navigation"
             aria-expanded={isMenuOpen}
             aria-label="Toggle navigation menu"
-            className="flex h-11 w-11 flex-col items-center justify-center gap-1.5 rounded-full border border-white/10 bg-white/5"
+            className="flex h-11 w-11 flex-col items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/5"
             onClick={() => setIsMenuOpen((current) => !current)}
             type="button"
           >
@@ -150,7 +150,7 @@ export function NavbarClient({
                 aria-expanded={isProfileMenuOpen}
                 aria-haspopup="menu"
                 aria-label="Open profile menu"
-                className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white/5 text-sm font-semibold text-white transition hover:bg-white/10"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white/5 text-sm font-semibold text-white transition hover:bg-white/10"
                 onClick={() => setIsProfileMenuOpen((current) => !current)}
                 type="button"
               >
@@ -237,7 +237,7 @@ export function NavbarClient({
             id="mobile-navigation"
             className="rounded-3xl border border-white/10 bg-white/5 p-4 md:hidden"
           >
-            <nav className="flex flex-col gap-3 text-sm text-zinc-300">
+            <nav className="flex flex-col gap-3 text-base font-medium text-zinc-300">
               {NAV_LINKS.map((link) => (
                 <Link
                   key={link.href}
@@ -260,12 +260,12 @@ export function NavbarClient({
                     {accountStatus?.planLabel ?? "Free"} plan
                   </p>
                   <Link href="/profiles" onClick={() => setIsMenuOpen(false)}>
-                    <Button className="w-full" variant="secondary">
+                    <Button className="w-full !rounded-lg" variant="secondary">
                       Profile
                     </Button>
                   </Link>
                   <Link href="/purchases" onClick={() => setIsMenuOpen(false)}>
-                    <Button className="w-full" variant="secondary">
+                    <Button className="w-full !rounded-lg" variant="secondary">
                       Purchases
                     </Button>
                   </Link>
@@ -273,7 +273,7 @@ export function NavbarClient({
                     action="/auth/logout"
                     method="post"
                   >
-                    <Button className="w-full" variant="secondary">
+                    <Button className="w-full !rounded-lg" variant="secondary">
                       Log out
                     </Button>
                   </form>
