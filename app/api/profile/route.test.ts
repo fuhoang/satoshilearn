@@ -160,4 +160,48 @@ describe("profile route", () => {
       { onConflict: "id" },
     );
   });
+
+  it("drops avatar urls owned by a different user", async () => {
+    getUser.mockResolvedValue({
+      data: {
+        user: {
+          id: "user-1",
+          email: "user@example.com",
+        },
+      },
+    });
+    single.mockResolvedValue({
+      data: {
+        id: "user-1",
+        email: "user@example.com",
+        display_name: null,
+        avatar_url: null,
+        bio: null,
+        timezone: null,
+        created_at: "2026-03-24T00:00:00.000Z",
+      },
+      error: null,
+    });
+
+    const { POST } = await import("@/app/api/profile/route");
+    await POST(
+      new Request("http://localhost/api/profile", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          avatar_url:
+            "https://project.supabase.co/storage/v1/object/public/avatars/user-2/avatar.png",
+        }),
+      }),
+    );
+
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        avatar_url: null,
+      }),
+      { onConflict: "id" },
+    );
+  });
 });

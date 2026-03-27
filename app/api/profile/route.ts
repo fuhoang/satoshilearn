@@ -21,7 +21,7 @@ function sanitizeShortText(value: unknown, maxLength: number) {
   return trimmed.length > 0 ? trimmed.slice(0, maxLength) : null;
 }
 
-function sanitizeAvatarUrl(value: unknown) {
+function sanitizeAvatarUrl(value: unknown, userId: string) {
   if (typeof value !== "string") {
     return null;
   }
@@ -46,6 +46,12 @@ function sanitizeAvatarUrl(value: unknown) {
         `${env.url}/storage/v1/object/public/avatars/`,
       )
     ) {
+      return null;
+    }
+
+    const prefix = `${env.url}/storage/v1/object/public/avatars/${userId}/`;
+
+    if (!url.toString().startsWith(prefix)) {
       return null;
     }
 
@@ -83,7 +89,7 @@ export async function POST(request: Request) {
     timezone?: unknown;
   };
   const displayName = sanitizeDisplayName(body.display_name);
-  const avatarUrl = sanitizeAvatarUrl(body.avatar_url);
+  const avatarUrl = sanitizeAvatarUrl(body.avatar_url, user.id);
   const bio = sanitizeShortText(body.bio, 240);
   const timezone = sanitizeShortText(body.timezone, 100);
 

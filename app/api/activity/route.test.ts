@@ -1,6 +1,6 @@
-import { GET, POST } from "@/app/api/activity/route";
-
 const cookieState = new Map<string, string>();
+const createServerSupabaseClient = vi.fn();
+const getUser = vi.fn();
 
 vi.mock("next/headers", () => ({
   cookies: async () => ({
@@ -11,12 +11,20 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
+vi.mock("@/lib/supabase/server", () => ({
+  createServerSupabaseClient: () => createServerSupabaseClient(),
+}));
+
 describe("activity route", () => {
   beforeEach(() => {
     cookieState.clear();
+    getUser.mockReset();
+    createServerSupabaseClient.mockReset();
+    createServerSupabaseClient.mockResolvedValue(null);
   });
 
   it("returns empty activity by default", async () => {
+    const { GET } = await import("@/app/api/activity/route");
     const response = await GET();
     const payload = await response.json();
 
@@ -29,6 +37,7 @@ describe("activity route", () => {
   });
 
   it("stores lesson completions in the fallback cookie payload", async () => {
+    const { POST, GET } = await import("@/app/api/activity/route");
     const response = await POST(
       new Request("http://localhost/api/activity", {
         method: "POST",
@@ -68,6 +77,7 @@ describe("activity route", () => {
   });
 
   it("stores quiz attempts in the fallback cookie payload", async () => {
+    const { POST } = await import("@/app/api/activity/route");
     const response = await POST(
       new Request("http://localhost/api/activity", {
         method: "POST",
@@ -102,6 +112,7 @@ describe("activity route", () => {
   });
 
   it("stores tutor prompts in the fallback cookie payload", async () => {
+    const { POST } = await import("@/app/api/activity/route");
     const response = await POST(
       new Request("http://localhost/api/activity", {
         method: "POST",
@@ -133,6 +144,7 @@ describe("activity route", () => {
   });
 
   it("stores conversion events in the fallback cookie payload", async () => {
+    const { POST } = await import("@/app/api/activity/route");
     const response = await POST(
       new Request("http://localhost/api/activity", {
         method: "POST",
@@ -163,5 +175,44 @@ describe("activity route", () => {
         targetTitle: "Advanced Basics",
       },
     ]);
+  });
+
+  it("falls back to cookies for signed-out users even when Supabase is configured", async () => {
+    createServerSupabaseClient.mockResolvedValue({
+      auth: {
+        getUser,
+      },
+    });
+    getUser.mockResolvedValue({
+      data: { user: null },
+    });
+
+    const { POST } = await import("@/app/api/activity/route");
+    const response = await POST(
+      new Request("http://localhost/api/activity", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "lesson_completion",
+          lessonSlug: "wallet-basics",
+          lessonTitle: "Wallet Basics",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("set-cookie")).toContain("satoshilearn-activity=");
+    await expect(response.json()).resolves.toEqual(
+      expect.objectContaining({
+        lessonCompletions: [
+          expect.objectContaining({
+            lessonSlug: "wallet-basics",
+            lessonTitle: "Wallet Basics",
+          }),
+        ],
+      }),
+    );
   });
 });

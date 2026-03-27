@@ -51,6 +51,15 @@ const UPCOMING_FEATURES = [
 const PRO_ACCESS_STATUSES: BillingStatus[] = ["active", "trialing", "past_due"];
 const FREE_TUTOR_REQUEST_LIMIT = 10;
 const PRO_TUTOR_REQUEST_LIMIT = 30;
+const ACCOUNT_STATUS_DATE_FORMAT: Intl.DateTimeFormatOptions = {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+};
+const FREE_PLAN_SUMMARY =
+  "You can access the full live Bitcoin curriculum, quizzes, dashboard history, and account tools on the free plan today.";
+const PRO_PLAN_SUMMARY =
+  "Your account has Pro billing access, including future premium tracks, stronger tutor access, and purchase history in the billing hub.";
 
 function toIsoTimestamp(value: number | null | undefined) {
   return typeof value === "number" ? new Date(value * 1000).toISOString() : null;
@@ -87,83 +96,124 @@ export function getTutorRequestLimit(snapshot: BillingSnapshot) {
     : FREE_TUTOR_REQUEST_LIMIT;
 }
 
-export function getAccountStatus(snapshot: BillingSnapshot): AccountStatus {
-  if (!snapshot.configured) {
-    return {
-      billingSummary: "Billing is not configured in this environment yet.",
-      billingStatus: "Billing not configured",
-      canManageBilling: false,
-      checkoutCtaLabel: "Set up Stripe first",
-      ctaHref: "/purchases",
-      ctaLabel: "Open billing hub",
-      headline: "Free plan",
-      includedFeatures: FREE_FEATURES,
-      upcomingFeatures: UPCOMING_FEATURES,
-      nextStep: "Add Stripe environment variables to enable checkout, subscriptions, and invoice history.",
-      planLabel: "Free",
-      planSummary:
-        "You can access the full live Bitcoin curriculum, quizzes, dashboard history, and account tools on the free plan today.",
-    };
-  }
-
-  if (!snapshot.subscription) {
-    return {
-      billingSummary: "Free access is active for your account.",
-      billingStatus: "No active subscription",
-      canManageBilling: true,
-      checkoutCtaLabel: "Upgrade to Pro",
-      ctaHref: "/purchases",
-      ctaLabel: "Open billing hub",
-      headline: "Free plan",
-      includedFeatures: FREE_FEATURES,
-      upcomingFeatures: UPCOMING_FEATURES,
-      nextStep: "Choose a Pro plan to unlock future premium tracks, invoice history, and expanded tutor access.",
-      planLabel: "Free",
-      planSummary:
-        "You can access the full live Bitcoin curriculum, quizzes, dashboard history, and account tools on the free plan today.",
-    };
-  }
-
-  const isYearly = snapshot.subscription.plan_slug === "pro_yearly";
-  const periodEnd = snapshot.subscription.current_period_end
-    ? new Date(snapshot.subscription.current_period_end).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
+function formatAccountStatusDate(value: string | null) {
+  return value
+    ? new Date(value).toLocaleDateString("en-GB", ACCOUNT_STATUS_DATE_FORMAT)
     : null;
-  const statusLabel =
-    snapshot.subscription.status === "trialing"
-      ? "Trial active"
-      : snapshot.subscription.status === "past_due"
-        ? "Payment issue"
-        : snapshot.subscription.cancel_at_period_end
-          ? "Cancels at period end"
-          : "Active subscription";
+}
+
+function getSubscriptionStatusLabel(subscription: SubscriptionRecord) {
+  if (subscription.status === "trialing") {
+    return "Trial active";
+  }
+
+  if (subscription.status === "past_due") {
+    return "Payment issue";
+  }
+
+  if (subscription.cancel_at_period_end) {
+    return "Cancels at period end";
+  }
+
+  return "Active subscription";
+}
+
+function getActivePlanHeadline(subscription: SubscriptionRecord) {
+  return subscription.plan_slug === "pro_yearly" ? "Pro yearly" : "Pro monthly";
+}
+
+function buildUnconfiguredAccountStatus(): AccountStatus {
+  return {
+    billingSummary: "Billing is not configured in this environment yet.",
+    billingStatus: "Billing not configured",
+    canManageBilling: false,
+    checkoutCtaLabel: "Set up Stripe first",
+    ctaHref: "/purchases",
+    ctaLabel: "Open billing hub",
+    headline: "Free plan",
+    includedFeatures: FREE_FEATURES,
+    upcomingFeatures: UPCOMING_FEATURES,
+    nextStep:
+      "Add Stripe environment variables to enable checkout, subscriptions, and invoice history.",
+    planLabel: "Free",
+    planSummary: FREE_PLAN_SUMMARY,
+  };
+}
+
+function buildFreeAccountStatus(): AccountStatus {
+  return {
+    billingSummary: "Free access is active for your account.",
+    billingStatus: "No active subscription",
+    canManageBilling: true,
+    checkoutCtaLabel: "Upgrade to Pro",
+    ctaHref: "/purchases",
+    ctaLabel: "Open billing hub",
+    headline: "Free plan",
+    includedFeatures: FREE_FEATURES,
+    upcomingFeatures: UPCOMING_FEATURES,
+    nextStep:
+      "Choose a Pro plan to unlock future premium tracks, invoice history, and expanded tutor access.",
+    planLabel: "Free",
+    planSummary: FREE_PLAN_SUMMARY,
+  };
+}
+
+function buildActiveAccountStatus(subscription: SubscriptionRecord): AccountStatus {
+  const headline = getActivePlanHeadline(subscription);
+  const periodEnd = formatAccountStatusDate(subscription.current_period_end);
 
   return {
     billingSummary: periodEnd
-      ? `${isYearly ? "Pro yearly" : "Pro monthly"} is active${snapshot.subscription.cancel_at_period_end ? " and will end" : " through"} ${periodEnd}.`
-      : `${isYearly ? "Pro yearly" : "Pro monthly"} is active for your account.`,
-    billingStatus: statusLabel,
+      ? `${headline} is active${subscription.cancel_at_period_end ? " and will end" : " through"} ${periodEnd}.`
+      : `${headline} is active for your account.`,
+    billingStatus: getSubscriptionStatusLabel(subscription),
     canManageBilling: true,
-    checkoutCtaLabel: snapshot.subscription.cancel_at_period_end
+    checkoutCtaLabel: subscription.cancel_at_period_end
       ? "Resume with a new plan"
       : "Change plan",
     ctaHref: "/purchases",
     ctaLabel: "Open billing hub",
-    headline: isYearly ? "Pro yearly" : "Pro monthly",
+    headline,
     includedFeatures: PRO_FEATURES,
-    upcomingFeatures: snapshot.subscription.cancel_at_period_end
+    upcomingFeatures: subscription.cancel_at_period_end
       ? ["Subscription remains active until the current billing period ends."]
       : ["More premium tracks and usage controls will build on this plan."],
-    nextStep: snapshot.subscription.cancel_at_period_end
+    nextStep: subscription.cancel_at_period_end
       ? "Reactivate with a new checkout session before the current billing period ends if you want uninterrupted access."
       : "Use the billing hub to review renewals, payment history, and plan options.",
     planLabel: "Pro",
-    planSummary:
-      "Your account has Pro billing access, including future premium tracks, stronger tutor access, and purchase history in the billing hub.",
+    planSummary: PRO_PLAN_SUMMARY,
   };
+}
+
+async function resolveUserIdByStripeCustomerId(
+  stripeCustomerId: string,
+) {
+  const admin = createSupabaseAdminClient();
+
+  if (!admin) {
+    return null;
+  }
+
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("stripe_customer_id", stripeCustomerId)
+    .maybeSingle();
+
+  return profile?.id ?? null;
+}
+
+export function getAccountStatus(snapshot: BillingSnapshot): AccountStatus {
+  if (!snapshot.configured) {
+    return buildUnconfiguredAccountStatus();
+  }
+
+  if (!snapshot.subscription) {
+    return buildFreeAccountStatus();
+  }
+
+  return buildActiveAccountStatus(snapshot.subscription);
 }
 
 export async function getBillingSnapshotForCurrentUser(): Promise<BillingSnapshot> {
@@ -417,19 +467,14 @@ export async function recordPurchaseEvent(input: {
   stripeInvoiceId?: string | null;
   subscriptionId?: string | null;
 }) {
-  const admin = createSupabaseAdminClient();
-
-  if (!admin || !input.stripeCustomerId) {
+  if (!input.stripeCustomerId) {
     return;
   }
 
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("id")
-    .eq("stripe_customer_id", input.stripeCustomerId)
-    .maybeSingle();
+  const userId = await resolveUserIdByStripeCustomerId(input.stripeCustomerId);
+  const admin = createSupabaseAdminClient();
 
-  if (!profile) {
+  if (!admin || !userId) {
     return;
   }
 
@@ -441,7 +486,7 @@ export async function recordPurchaseEvent(input: {
     stripe_checkout_session_id: input.stripeCheckoutSessionId ?? null,
     stripe_invoice_id: input.stripeInvoiceId ?? null,
     subscription_id: input.subscriptionId ?? null,
-    user_id: profile.id,
+    user_id: userId,
   });
 }
 
@@ -453,19 +498,14 @@ export async function recordConversionEvent(input: {
   targetSlug: string;
   targetTitle: string;
 }) {
-  const admin = createSupabaseAdminClient();
-
-  if (!admin || !input.stripeCustomerId) {
+  if (!input.stripeCustomerId) {
     return;
   }
 
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("id")
-    .eq("stripe_customer_id", input.stripeCustomerId)
-    .maybeSingle();
+  const userId = await resolveUserIdByStripeCustomerId(input.stripeCustomerId);
+  const admin = createSupabaseAdminClient();
 
-  if (!profile) {
+  if (!admin || !userId) {
     return;
   }
 
@@ -482,6 +522,6 @@ export async function recordConversionEvent(input: {
     created_at: new Date().toISOString(),
     lesson_slug: input.targetSlug,
     lesson_title: input.targetTitle,
-    user_id: profile.id,
+    user_id: userId,
   });
 }

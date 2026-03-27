@@ -15,6 +15,12 @@ import type {
 } from "@/types/activity";
 
 const ACTIVITY_COOKIE = "satoshilearn-activity";
+const CONVERSION_EVENT_TYPES = [
+  "locked_view",
+  "upgrade_click",
+  "checkout_start",
+  "checkout_complete",
+] as const;
 
 type ActivityInsertBody =
   | {
@@ -49,6 +55,341 @@ type ActivityInsertBody =
       targetSlug?: string;
       targetTitle?: string;
     };
+
+type ActivityRecord =
+  | {
+      type: "lesson_completion";
+      lessonSlug: string;
+      lessonTitle: string;
+      completedAt: string;
+    }
+  | {
+      type: "quiz_attempt";
+      lessonSlug: string;
+      lessonTitle: string;
+      correctCount: number;
+      totalQuestions: number;
+      passed: boolean;
+      attemptedAt: string;
+    }
+  | {
+      type: "tutor_prompt";
+      lessonSlug: string;
+      lessonTitle: string;
+      repliedAt: string;
+      responsePreview: string | null;
+      topic: string | null;
+    }
+  | {
+      type: "conversion_event";
+      eventType: ConversionEventRecord["eventType"];
+      occurredAt: string;
+      plan: ConversionEventRecord["plan"];
+      source: string;
+      targetSlug: string;
+      targetTitle: string;
+    };
+
+type LearningActivityRow = {
+  activity_context: string | null;
+  activity_type: string;
+  correct_count: number | null;
+  created_at: string;
+  lesson_slug: string;
+  lesson_title: string;
+  passed: boolean | null;
+  response_preview: string | null;
+  total_questions: number | null;
+};
+
+type ActivityWriteResult =
+  | {
+      persisted: true;
+      response: NextResponse;
+    }
+  | {
+      persisted: false;
+      response: NextResponse;
+    }
+  | null;
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0;
+}
+
+function normalizeTimestamp(value: unknown) {
+  return typeof value === "string" && !Number.isNaN(Date.parse(value))
+    ? value
+    : new Date().toISOString();
+}
+
+function isConversionEventType(
+  value: unknown,
+): value is ConversionEventRecord["eventType"] {
+  return CONVERSION_EVENT_TYPES.includes(
+    value as (typeof CONVERSION_EVENT_TYPES)[number],
+  );
+}
+
+function normalizePlan(value: unknown): ConversionEventRecord["plan"] {
+  return value === "pro_monthly" || value === "pro_yearly" ? value : null;
+}
+
+function parseConversionContext(raw: string | null) {
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as {
+      eventType?: ConversionEventRecord["eventType"];
+      plan?: ConversionEventRecord["plan"];
+      source?: string;
+    };
+  } catch {
+    return null;
+  }
+}
+
+function mapRowsToLearningHistory(rows: LearningActivityRow[]) {
+  return sanitizeLearningHistory({
+    lessonCompletions: rows
+      .filter((row) => row.activity_type === "lesson_completion")
+      .map((row) => ({
+        lessonSlug: row.lesson_slug,
+        lessonTitle: row.lesson_title,
+        completedAt: row.created_at,
+      })),
+    quizAttempts: rows
+      .filter((row) => row.activity_type === "quiz_attempt")
+      .map((row) => ({
+        lessonSlug: row.lesson_slug,
+        lessonTitle: row.lesson_title,
+        correctCount: row.correct_count ?? 0,
+        totalQuestions: row.total_questions ?? 0,
+        passed: Boolean(row.passed),
+        attemptedAt: row.created_at,
+      })),
+    tutorPrompts: rows
+      .filter((row) => row.activity_type === "tutor_prompt")
+      .map((row) => ({
+        prompt: row.lesson_title,
+        repliedAt: row.created_at,
+        responsePreview: row.response_preview ?? null,
+        topic: row.activity_context ?? null,
+      })),
+    conversionEvents: rows
+      .filter((row) => row.activity_type === "conversion_event")
+      .map((row) => {
+        const context = parseConversionContext(row.activity_context);
+
+        return {
+          eventType: context?.eventType ?? "upgrade_click",
+          occurredAt: row.created_at,
+          plan: normalizePlan(context?.plan),
+          source: context?.source ?? "unknown",
+          targetSlug: row.lesson_slug,
+          targetTitle: row.lesson_title,
+        };
+      }),
+  });
+}
+
+function sanitizeActivityInsert(body: ActivityInsertBody): ActivityRecord | null {
+  if (!body || typeof body !== "object" || typeof body.type !== "string") {
+    return null;
+  }
+
+  if (
+    body.type === "lesson_completion" &&
+    isNonEmptyString(body.lessonSlug) &&
+    isNonEmptyString(body.lessonTitle)
+  ) {
+    return {
+      type: "lesson_completion",
+      lessonSlug: body.lessonSlug,
+      lessonTitle: body.lessonTitle,
+      completedAt: normalizeTimestamp(body.completedAt),
+    };
+  }
+
+  if (
+    body.type === "quiz_attempt" &&
+    isNonEmptyString(body.lessonSlug) &&
+    isNonEmptyString(body.lessonTitle) &&
+    typeof body.correctCount === "number" &&
+    typeof body.totalQuestions === "number" &&
+    typeof body.passed === "boolean"
+  ) {
+    return {
+      type: "quiz_attempt",
+      lessonSlug: body.lessonSlug,
+      lessonTitle: body.lessonTitle,
+      correctCount: body.correctCount,
+      totalQuestions: body.totalQuestions,
+      passed: body.passed,
+      attemptedAt: normalizeTimestamp(body.attemptedAt),
+    };
+  }
+
+  if (
+    body.type === "tutor_prompt" &&
+    isNonEmptyString(body.lessonSlug) &&
+    isNonEmptyString(body.lessonTitle)
+  ) {
+    return {
+      type: "tutor_prompt",
+      lessonSlug: body.lessonSlug,
+      lessonTitle: body.lessonTitle,
+      repliedAt: normalizeTimestamp(body.repliedAt),
+      responsePreview: isNonEmptyString(body.responsePreview)
+        ? body.responsePreview
+        : null,
+      topic: isNonEmptyString(body.topic) ? body.topic : null,
+    };
+  }
+
+  if (
+    body.type === "conversion_event" &&
+    isConversionEventType(body.eventType) &&
+    isNonEmptyString(body.source) &&
+    isNonEmptyString(body.targetSlug) &&
+    isNonEmptyString(body.targetTitle)
+  ) {
+    return {
+      type: "conversion_event",
+      eventType: body.eventType,
+      occurredAt: normalizeTimestamp(body.occurredAt),
+      plan: normalizePlan(body.plan),
+      source: body.source,
+      targetSlug: body.targetSlug,
+      targetTitle: body.targetTitle,
+    };
+  }
+
+  return null;
+}
+
+function invalidActivityResponse() {
+  return NextResponse.json({ error: "Invalid activity payload." }, { status: 400 });
+}
+
+function toCookieHistoryPatch(activity: ActivityRecord): LearningHistory {
+  if (activity.type === "lesson_completion") {
+    return {
+      conversionEvents: [],
+      lessonCompletions: [
+        {
+          lessonSlug: activity.lessonSlug,
+          lessonTitle: activity.lessonTitle,
+          completedAt: activity.completedAt,
+        },
+      ],
+      quizAttempts: [],
+      tutorPrompts: [],
+    };
+  }
+
+  if (activity.type === "quiz_attempt") {
+    return {
+      conversionEvents: [],
+      lessonCompletions: [],
+      quizAttempts: [
+        {
+          lessonSlug: activity.lessonSlug,
+          lessonTitle: activity.lessonTitle,
+          correctCount: activity.correctCount,
+          totalQuestions: activity.totalQuestions,
+          passed: activity.passed,
+          attemptedAt: activity.attemptedAt,
+        } satisfies QuizAttemptRecord,
+      ],
+      tutorPrompts: [],
+    };
+  }
+
+  if (activity.type === "tutor_prompt") {
+    return {
+      conversionEvents: [],
+      lessonCompletions: [],
+      quizAttempts: [],
+      tutorPrompts: [
+        {
+          prompt: activity.lessonTitle,
+          repliedAt: activity.repliedAt,
+          responsePreview: activity.responsePreview,
+          topic: activity.topic,
+        } satisfies TutorPromptRecord,
+      ],
+    };
+  }
+
+  return {
+    conversionEvents: [
+      {
+        eventType: activity.eventType,
+        occurredAt: activity.occurredAt,
+        plan: activity.plan,
+        source: activity.source,
+        targetSlug: activity.targetSlug,
+        targetTitle: activity.targetTitle,
+      } satisfies ConversionEventRecord,
+    ],
+    lessonCompletions: [],
+    quizAttempts: [],
+    tutorPrompts: [],
+  };
+}
+
+function toSupabaseInsertPayload(activity: ActivityRecord, userId: string) {
+  if (activity.type === "lesson_completion") {
+    return {
+      activity_type: "lesson_completion",
+      created_at: activity.completedAt,
+      lesson_slug: activity.lessonSlug,
+      lesson_title: activity.lessonTitle,
+      user_id: userId,
+    };
+  }
+
+  if (activity.type === "quiz_attempt") {
+    return {
+      activity_type: "quiz_attempt",
+      correct_count: activity.correctCount,
+      created_at: activity.attemptedAt,
+      lesson_slug: activity.lessonSlug,
+      lesson_title: activity.lessonTitle,
+      passed: activity.passed,
+      total_questions: activity.totalQuestions,
+      user_id: userId,
+    };
+  }
+
+  if (activity.type === "tutor_prompt") {
+    return {
+      activity_context: activity.topic,
+      activity_type: "tutor_prompt",
+      created_at: activity.repliedAt,
+      lesson_slug: activity.lessonSlug,
+      lesson_title: activity.lessonTitle,
+      response_preview: activity.responsePreview,
+      user_id: userId,
+    };
+  }
+
+  return {
+    activity_context: JSON.stringify({
+      eventType: activity.eventType,
+      plan: activity.plan,
+      source: activity.source,
+    }),
+    activity_type: "conversion_event",
+    created_at: activity.occurredAt,
+    lesson_slug: activity.targetSlug,
+    lesson_title: activity.targetTitle,
+    user_id: userId,
+  };
+}
 
 async function readCookieHistory() {
   const cookieStore = await cookies();
@@ -92,10 +433,7 @@ async function readSupabaseHistory() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return {
-      history: EMPTY_LEARNING_HISTORY,
-      persisted: false,
-    };
+    return null;
   }
 
   const { data, error } = await supabase
@@ -112,183 +450,25 @@ async function readSupabaseHistory() {
   }
 
   return {
-    history: sanitizeLearningHistory({
-      lessonCompletions: data
-        .filter((row) => row.activity_type === "lesson_completion")
-        .map((row) => ({
-          lessonSlug: row.lesson_slug,
-          lessonTitle: row.lesson_title,
-          completedAt: row.created_at,
-        })),
-      quizAttempts: data
-        .filter((row) => row.activity_type === "quiz_attempt")
-        .map((row) => ({
-          lessonSlug: row.lesson_slug,
-          lessonTitle: row.lesson_title,
-          correctCount: row.correct_count ?? 0,
-          totalQuestions: row.total_questions ?? 0,
-          passed: Boolean(row.passed),
-          attemptedAt: row.created_at,
-        })),
-      tutorPrompts: data
-        .filter((row) => row.activity_type === "tutor_prompt")
-        .map((row) => ({
-          prompt: row.lesson_title,
-          repliedAt: row.created_at,
-          responsePreview: row.response_preview ?? null,
-          topic: row.activity_context ?? null,
-        })),
-      conversionEvents: data
-        .filter((row) => row.activity_type === "conversion_event")
-        .map((row) => {
-          let context:
-            | {
-                eventType?: ConversionEventRecord["eventType"];
-                plan?: ConversionEventRecord["plan"];
-                source?: string;
-              }
-            | null = null;
-
-          if (row.activity_context) {
-            try {
-              context = JSON.parse(row.activity_context) as {
-                eventType?: ConversionEventRecord["eventType"];
-                plan?: ConversionEventRecord["plan"];
-                source?: string;
-              };
-            } catch {
-              context = null;
-            }
-          }
-
-          return {
-            eventType: context?.eventType ?? "upgrade_click",
-            occurredAt: row.created_at,
-            plan:
-              context?.plan === "pro_monthly" || context?.plan === "pro_yearly"
-                ? context.plan
-                : null,
-            source: context?.source ?? "unknown",
-            targetSlug: row.lesson_slug,
-            targetTitle: row.lesson_title,
-          };
-        }),
-    }),
-    persisted: true,
+    history: mapRowsToLearningHistory((data ?? []) as LearningActivityRow[]),
+    persisted: true as const,
   };
 }
 
-function sanitizeActivityInsert(body: ActivityInsertBody) {
-  if (!body || typeof body !== "object" || typeof body.type !== "string") {
+async function getPersistedHistoryResponse() {
+  const history = await readSupabaseHistory();
+
+  if (!history) {
     return null;
   }
 
-  if (body.type === "lesson_completion") {
-    if (
-      typeof body.lessonSlug !== "string" ||
-      body.lessonSlug.length === 0 ||
-      typeof body.lessonTitle !== "string" ||
-      body.lessonTitle.length === 0
-    ) {
-      return null;
-    }
-
-    return {
-      type: "lesson_completion" as const,
-      lessonSlug: body.lessonSlug,
-      lessonTitle: body.lessonTitle,
-      completedAt:
-        typeof body.completedAt === "string" && !Number.isNaN(Date.parse(body.completedAt))
-          ? body.completedAt
-          : new Date().toISOString(),
-    };
-  }
-
-  if (body.type === "tutor_prompt") {
-    if (
-      typeof body.lessonSlug !== "string" ||
-      body.lessonSlug.length === 0 ||
-      typeof body.lessonTitle !== "string" ||
-      body.lessonTitle.length === 0
-    ) {
-      return null;
-    }
-
-    return {
-      type: "tutor_prompt" as const,
-      lessonSlug: body.lessonSlug,
-      lessonTitle: body.lessonTitle,
-      repliedAt:
-        typeof body.repliedAt === "string" &&
-        !Number.isNaN(Date.parse(body.repliedAt))
-          ? body.repliedAt
-          : new Date().toISOString(),
-      responsePreview:
-        typeof body.responsePreview === "string" && body.responsePreview.length > 0
-          ? body.responsePreview
-          : null,
-      topic:
-        typeof body.topic === "string" && body.topic.length > 0 ? body.topic : null,
-    };
-  }
-
-  if (
-    body.type === "conversion_event" &&
-    (body.eventType === "locked_view" ||
-      body.eventType === "upgrade_click" ||
-      body.eventType === "checkout_start" ||
-      body.eventType === "checkout_complete") &&
-    typeof body.source === "string" &&
-    body.source.length > 0 &&
-    typeof body.targetSlug === "string" &&
-    body.targetSlug.length > 0 &&
-    typeof body.targetTitle === "string" &&
-    body.targetTitle.length > 0
-  ) {
-    return {
-      type: "conversion_event" as const,
-      eventType: body.eventType,
-      occurredAt:
-        typeof body.occurredAt === "string" &&
-        !Number.isNaN(Date.parse(body.occurredAt))
-          ? body.occurredAt
-          : new Date().toISOString(),
-      plan:
-        body.plan === "pro_monthly" || body.plan === "pro_yearly" ? body.plan : null,
-      source: body.source,
-      targetSlug: body.targetSlug,
-      targetTitle: body.targetTitle,
-    };
-  }
-
-  if (
-    body.type === "quiz_attempt" &&
-    typeof body.lessonSlug === "string" &&
-    body.lessonSlug.length > 0 &&
-    typeof body.lessonTitle === "string" &&
-    body.lessonTitle.length > 0 &&
-    typeof body.correctCount === "number" &&
-    typeof body.totalQuestions === "number" &&
-    typeof body.passed === "boolean"
-  ) {
-    return {
-      type: "quiz_attempt" as const,
-      lessonSlug: body.lessonSlug,
-      lessonTitle: body.lessonTitle,
-      correctCount: body.correctCount,
-      totalQuestions: body.totalQuestions,
-      passed: body.passed,
-      attemptedAt:
-        typeof body.attemptedAt === "string" && !Number.isNaN(Date.parse(body.attemptedAt))
-          ? body.attemptedAt
-          : new Date().toISOString(),
-    };
-  }
-
-  return null;
+  return {
+    persisted: true as const,
+    response: NextResponse.json(history.history),
+  };
 }
 
-async function writeSupabaseHistory(body: ActivityInsertBody) {
+async function writeSupabaseHistory(body: ActivityInsertBody): Promise<ActivityWriteResult> {
   const supabase = await createServerSupabaseClient();
 
   if (!supabase) {
@@ -300,31 +480,25 @@ async function writeSupabaseHistory(body: ActivityInsertBody) {
   } = await supabase.auth.getUser();
 
   if (!user) {
+    return null;
+  }
+
+  const activity = sanitizeActivityInsert(body);
+
+  if (!activity) {
     return {
       persisted: false,
-      response: NextResponse.json(
-        { error: "You must be logged in to save activity." },
-        { status: 401 },
-      ),
+      response: invalidActivityResponse(),
     };
   }
 
-  const nextActivity = sanitizeActivityInsert(body);
-
-  if (!nextActivity) {
-    return {
-      persisted: false,
-      response: NextResponse.json({ error: "Invalid activity payload." }, { status: 400 }),
-    };
-  }
-
-  if (nextActivity.type === "lesson_completion") {
+  if (activity.type === "lesson_completion") {
     const { data: existingCompletion, error: existingError } = await supabase
       .from("learning_activity")
       .select("id")
       .eq("user_id", user.id)
       .eq("activity_type", "lesson_completion")
-      .eq("lesson_slug", nextActivity.lessonSlug)
+      .eq("lesson_slug", activity.lessonSlug)
       .maybeSingle();
 
     if (existingError) {
@@ -332,73 +506,19 @@ async function writeSupabaseHistory(body: ActivityInsertBody) {
     }
 
     if (existingCompletion) {
-      const history = await readSupabaseHistory();
-      return history
-        ? {
-            persisted: true,
-            response: NextResponse.json(history.history),
-          }
-        : null;
+      return getPersistedHistoryResponse();
     }
   }
 
-  const insertPayload =
-    nextActivity.type === "lesson_completion"
-      ? {
-          activity_type: "lesson_completion",
-          created_at: nextActivity.completedAt,
-          lesson_slug: nextActivity.lessonSlug,
-          lesson_title: nextActivity.lessonTitle,
-          user_id: user.id,
-        }
-      : nextActivity.type === "quiz_attempt"
-        ? {
-            activity_type: "quiz_attempt",
-            correct_count: nextActivity.correctCount,
-            created_at: nextActivity.attemptedAt,
-            lesson_slug: nextActivity.lessonSlug,
-            lesson_title: nextActivity.lessonTitle,
-            passed: nextActivity.passed,
-            total_questions: nextActivity.totalQuestions,
-            user_id: user.id,
-          }
-        : nextActivity.type === "tutor_prompt"
-          ? {
-            activity_context: nextActivity.topic,
-            activity_type: "tutor_prompt",
-            created_at: nextActivity.repliedAt,
-            lesson_slug: nextActivity.lessonSlug,
-            lesson_title: nextActivity.lessonTitle,
-            response_preview: nextActivity.responsePreview,
-            user_id: user.id,
-          }
-          : {
-            activity_context: JSON.stringify({
-              eventType: nextActivity.eventType,
-              plan: nextActivity.plan,
-              source: nextActivity.source,
-            }),
-            activity_type: "conversion_event",
-            created_at: nextActivity.occurredAt,
-            lesson_slug: nextActivity.targetSlug,
-            lesson_title: nextActivity.targetTitle,
-            user_id: user.id,
-          };
-
-  const { error } = await supabase.from("learning_activity").insert(insertPayload);
+  const { error } = await supabase
+    .from("learning_activity")
+    .insert(toSupabaseInsertPayload(activity, user.id));
 
   if (error) {
     return null;
   }
 
-  const history = await readSupabaseHistory();
-
-  return history
-    ? {
-        persisted: true,
-        response: NextResponse.json(history.history),
-      }
-    : null;
+  return getPersistedHistoryResponse();
 }
 
 export async function GET() {
@@ -415,80 +535,18 @@ export async function POST(request: Request) {
   const body = (await request.json()) as ActivityInsertBody;
   const supabaseWrite = await writeSupabaseHistory(body);
 
-  if (supabaseWrite?.persisted) {
-    return supabaseWrite.response;
-  }
-
-  if (supabaseWrite?.response) {
+  if (supabaseWrite) {
     return supabaseWrite.response;
   }
 
   const current = await readCookieHistory();
-  const nextActivity = sanitizeActivityInsert(body);
+  const activity = sanitizeActivityInsert(body);
 
-  if (!nextActivity) {
-    return NextResponse.json({ error: "Invalid activity payload." }, { status: 400 });
+  if (!activity) {
+    return invalidActivityResponse();
   }
 
-  const merged =
-    nextActivity.type === "lesson_completion"
-      ? mergeLearningHistory(current, {
-          conversionEvents: [],
-          lessonCompletions: [
-            {
-              lessonSlug: nextActivity.lessonSlug,
-              lessonTitle: nextActivity.lessonTitle,
-              completedAt: nextActivity.completedAt,
-            },
-          ],
-          quizAttempts: [],
-          tutorPrompts: [],
-        })
-      : nextActivity.type === "quiz_attempt"
-        ? mergeLearningHistory(current, {
-            conversionEvents: [],
-            lessonCompletions: [],
-            quizAttempts: [
-              {
-                lessonSlug: nextActivity.lessonSlug,
-                lessonTitle: nextActivity.lessonTitle,
-                correctCount: nextActivity.correctCount,
-                totalQuestions: nextActivity.totalQuestions,
-                passed: nextActivity.passed,
-                attemptedAt: nextActivity.attemptedAt,
-              } satisfies QuizAttemptRecord,
-            ],
-            tutorPrompts: [],
-          })
-        : nextActivity.type === "tutor_prompt"
-          ? mergeLearningHistory(current, {
-              conversionEvents: [],
-              lessonCompletions: [],
-              quizAttempts: [],
-              tutorPrompts: [
-                {
-                  prompt: nextActivity.lessonTitle,
-                  repliedAt: nextActivity.repliedAt,
-                  responsePreview: nextActivity.responsePreview,
-                  topic: nextActivity.topic,
-                } satisfies TutorPromptRecord,
-              ],
-            })
-          : mergeLearningHistory(current, {
-              conversionEvents: [
-                {
-                  eventType: nextActivity.eventType,
-                  occurredAt: nextActivity.occurredAt,
-                  plan: nextActivity.plan,
-                  source: nextActivity.source,
-                  targetSlug: nextActivity.targetSlug,
-                  targetTitle: nextActivity.targetTitle,
-                } satisfies ConversionEventRecord,
-              ],
-              lessonCompletions: [],
-              quizAttempts: [],
-              tutorPrompts: [],
-            });
-
-  return writeCookieHistory(merged);
+  return writeCookieHistory(
+    mergeLearningHistory(current, toCookieHistoryPatch(activity)),
+  );
 }
