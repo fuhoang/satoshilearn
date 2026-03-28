@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { LessonContent } from "@/components/lesson/LessonContent";
 import { LessonTutorPanel } from "@/components/lesson/LessonTutorPanel";
+import { LessonVideoPlaceholder } from "@/components/lesson/LessonVideoPlaceholder";
 import type { Lesson } from "@/types/lesson";
 
 const LESSON_TUTOR_OPEN_CLASS = "lesson-tutor-open";
@@ -28,7 +29,10 @@ export function LessonWorkspace({
   return (
     <div>
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <LessonContent lesson={lesson} />
+        <div className="space-y-6">
+          <LessonVideoPlaceholder lesson={lesson} />
+          <LessonContent lesson={lesson} />
+        </div>
         <aside className="space-y-6">
           <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-6">
             <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
