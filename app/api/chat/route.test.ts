@@ -9,6 +9,8 @@ const from = vi.fn();
 const subscriptionMaybeSingle = vi.fn();
 const subscriptionEq = vi.fn();
 const subscriptionSelect = vi.fn();
+const cookies = vi.fn();
+const cookieGet = vi.fn();
 
 vi.mock("@/lib/openai", () => ({
   createTutorReply: (message: string) => createTutorReply(message),
@@ -17,6 +19,10 @@ vi.mock("@/lib/openai", () => ({
 
 vi.mock("@/lib/supabase/server", () => ({
   createServerSupabaseClient: () => createServerSupabaseClient(),
+}));
+
+vi.mock("next/headers", () => ({
+  cookies: () => cookies(),
 }));
 
 vi.mock("@/lib/rate-limit", () => ({
@@ -34,6 +40,8 @@ describe("chat route", () => {
     subscriptionMaybeSingle.mockReset();
     subscriptionEq.mockReset();
     subscriptionSelect.mockReset();
+    cookies.mockReset();
+    cookieGet.mockReset();
     createServerSupabaseClient.mockResolvedValue({
       auth: {
         getUser,
@@ -70,6 +78,10 @@ describe("chat route", () => {
         insert,
       };
     });
+    cookies.mockResolvedValue({
+      get: cookieGet,
+    });
+    cookieGet.mockReturnValue(undefined);
     insert.mockResolvedValue({ error: null });
   });
 
@@ -101,13 +113,79 @@ describe("chat route", () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message: "What is Bitcoin?" }),
+        body: JSON.stringify({ message: "What is Bitcoin?", source: "lesson" }),
       }),
     );
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({
       error: "Log in to use the AI tutor.",
+    });
+  });
+
+  it("allows a limited guest demo on the home page", async () => {
+    getUser.mockResolvedValue({
+      data: { user: null },
+    });
+    createTutorReply.mockResolvedValue("Bitcoin reply");
+
+    const response = await POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: "What is Bitcoin?", source: "home" }),
+      }),
+    );
+
+    expect(checkRateLimit).toHaveBeenCalledWith(
+      expect.stringMatching(/^chat:guest:/),
+      3,
+      60_000,
+    );
+    expect(from).not.toHaveBeenCalledWith("learning_activity");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("set-cookie")).toContain("blockwise_guest_tutor_id=");
+    await expect(response.json()).resolves.toEqual({
+      reply: "Bitcoin reply",
+      recordedAt: expect.any(String),
+      topic: "Bitcoin foundations",
+      usage: {
+        limit: 3,
+        remaining: 9,
+        plan: "free",
+        resetAt: expect.any(Number),
+      },
+    });
+  });
+
+  it("rate limits the guest home-page demo", async () => {
+    getUser.mockResolvedValue({
+      data: { user: null },
+    });
+    cookieGet.mockReturnValue({
+      value: "guest-1",
+    });
+    checkRateLimit.mockReturnValue({
+      allowed: false,
+      remaining: 0,
+      resetAt: Date.now() + 60_000,
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: "What is Bitcoin?", source: "home" }),
+      }),
+    );
+
+    expect(response.status).toBe(429);
+    await expect(response.json()).resolves.toEqual({
+      error: "You have used the guest AI demo for now. Log in to keep chatting.",
     });
   });
 

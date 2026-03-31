@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { getTutorRequestLimit, hasProAccess } from "@/lib/billing";
@@ -8,6 +9,10 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 const MAX_MESSAGE_LENGTH = 500;
 const CHAT_RATE_WINDOW_MS = 60_000;
 const TUTOR_PROMPT_PREVIEW_MAX = 160;
+const GUEST_TUTOR_REQUEST_LIMIT = 3;
+const GUEST_TUTOR_COOKIE = "blockwise_guest_tutor_id";
+const GUEST_LIMIT_ERROR =
+  "You have used the guest AI demo for now. Log in to keep chatting.";
 
 function buildTutorUsage(
   limit: number,
@@ -18,6 +23,23 @@ function buildTutorUsage(
     remaining: limitResult.remaining,
     resetAt: limitResult.resetAt,
   };
+}
+
+function buildRateLimitResponse(resetAt: number, error: string) {
+  return NextResponse.json(
+    { error },
+    {
+      status: 429,
+      headers: {
+        "Retry-After": String(
+          Math.max(
+            1,
+            Math.ceil((resetAt - Date.now()) / 1000),
+          ),
+        ),
+      },
+    },
+  );
 }
 
 export async function POST(request: Request) {
@@ -35,11 +57,85 @@ export async function POST(request: Request) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
+    const body = (await request.json()) as {
+      message?: unknown;
+      source?: unknown;
+    };
+    const message =
+      typeof body.message === "string" ? body.message.trim() : "";
+    const source = body.source === "home" ? "home" : "lesson";
+
+    if (!message) {
       return NextResponse.json(
-        { error: "Log in to use the AI tutor." },
-        { status: 401 },
+        { error: "Please enter a question before submitting." },
+        { status: 400 },
       );
+    }
+
+    if (message.length > MAX_MESSAGE_LENGTH) {
+      return NextResponse.json(
+        { error: "Please keep tutor questions under 500 characters." },
+        { status: 400 },
+      );
+    }
+
+    if (!user) {
+      if (source !== "home") {
+        return NextResponse.json(
+          { error: "Log in to use the AI tutor." },
+          { status: 401 },
+        );
+      }
+
+      const cookieStore = await cookies();
+      const existingGuestId = cookieStore.get(GUEST_TUTOR_COOKIE)?.value ?? null;
+      const guestId = existingGuestId ?? crypto.randomUUID();
+      const limitResult = checkRateLimit(
+        `chat:guest:${guestId}`,
+        GUEST_TUTOR_REQUEST_LIMIT,
+        CHAT_RATE_WINDOW_MS,
+      );
+
+      if (!limitResult.allowed) {
+        const response = buildRateLimitResponse(
+          limitResult.resetAt,
+          GUEST_LIMIT_ERROR,
+        );
+
+        if (!existingGuestId) {
+          response.cookies.set(GUEST_TUTOR_COOKIE, guestId, {
+            httpOnly: true,
+            maxAge: 60 * 60 * 24 * 30,
+            path: "/",
+            sameSite: "lax",
+          });
+        }
+
+        return response;
+      }
+
+      const reply = await createTutorReply(message);
+      const topic = inferTutorTopic(message);
+      const response = NextResponse.json({
+        reply,
+        recordedAt: new Date().toISOString(),
+        topic,
+        usage: {
+          ...buildTutorUsage(GUEST_TUTOR_REQUEST_LIMIT, limitResult),
+          plan: "free" as const,
+        },
+      });
+
+      if (!existingGuestId) {
+        response.cookies.set(GUEST_TUTOR_COOKIE, guestId, {
+          httpOnly: true,
+          maxAge: 60 * 60 * 24 * 30,
+          path: "/",
+          sameSite: "lax",
+        });
+      }
+
+      return response;
     }
 
     const { data: subscription } = await supabase
@@ -64,37 +160,9 @@ export async function POST(request: Request) {
     );
 
     if (!limitResult.allowed) {
-      return NextResponse.json(
-        { error: "You have reached the tutor limit for now. Please try again in a minute." },
-        {
-          status: 429,
-          headers: {
-            "Retry-After": String(
-              Math.max(
-                1,
-                Math.ceil((limitResult.resetAt - Date.now()) / 1000),
-              ),
-            ),
-          },
-        },
-      );
-    }
-
-    const body = (await request.json()) as { message?: unknown };
-    const message =
-      typeof body.message === "string" ? body.message.trim() : "";
-
-    if (!message) {
-      return NextResponse.json(
-        { error: "Please enter a question before submitting." },
-        { status: 400 },
-      );
-    }
-
-    if (message.length > MAX_MESSAGE_LENGTH) {
-      return NextResponse.json(
-        { error: "Please keep tutor questions under 500 characters." },
-        { status: 400 },
+      return buildRateLimitResponse(
+        limitResult.resetAt,
+        "You have reached the tutor limit for now. Please try again in a minute.",
       );
     }
 

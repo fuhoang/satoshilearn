@@ -21,16 +21,23 @@ const SEEDED_MESSAGES: ChatMessage[] = [
 
 export function ChatWindow({
   className,
+  requestSource,
   submittedPrompt,
   submittedPromptVersion,
   onClose,
 }: {
   className?: string;
+  requestSource?: "home" | "lesson";
   submittedPrompt?: string;
   submittedPromptVersion?: number;
   onClose?: () => void;
 }) {
-  const { messages, isLoading, error, sendMessage, usage } = useChat(SEEDED_MESSAGES);
+  const { messages, isLoading, error, sendMessage, usage } = useChat(
+    SEEDED_MESSAGES,
+    {
+      source: requestSource,
+    },
+  );
   const lastSubmittedPromptVersion = useRef(0);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 

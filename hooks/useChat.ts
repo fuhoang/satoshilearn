@@ -12,6 +12,10 @@ type TutorUsage = {
   resetAt: number;
 };
 
+type UseChatOptions = {
+  source?: "home" | "lesson";
+};
+
 const welcomeMessage: ChatMessage = {
   id: "welcome",
   role: "assistant",
@@ -19,7 +23,10 @@ const welcomeMessage: ChatMessage = {
     "Ask anything about Bitcoin and I will explain it with simple language and concrete examples.",
 };
 
-export function useChat(initialMessages: ChatMessage[] = [welcomeMessage]) {
+export function useChat(
+  initialMessages: ChatMessage[] = [welcomeMessage],
+  options: UseChatOptions = {},
+) {
   const [messages, setMessages] = useState<ChatMessage[]>([...initialMessages]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +57,10 @@ export function useChat(initialMessages: ChatMessage[] = [welcomeMessage]) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message: trimmedContent }),
+        body: JSON.stringify({
+          message: trimmedContent,
+          source: options.source ?? "lesson",
+        }),
       });
 
       const data = (await response.json()) as {
@@ -91,7 +101,7 @@ export function useChat(initialMessages: ChatMessage[] = [welcomeMessage]) {
     } finally {
       setIsLoading(false);
     }
-  }, [recordTutorPrompt]);
+  }, [options.source, recordTutorPrompt]);
 
   return { messages, isLoading, error, sendMessage, usage };
 }
