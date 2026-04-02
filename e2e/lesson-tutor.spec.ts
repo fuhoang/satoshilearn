@@ -14,7 +14,8 @@ test.describe("lesson tutor drawer", () => {
     await page.goto("/learn/what-is-money");
 
     const navbar = page.locator("body > header").first();
-    const lessonContent = page.locator("#lesson-content");
+    const lessonContent = page.getByTestId("lesson-layout");
+    await expect(lessonContent).toBeVisible();
 
     const beforeNavbar = await navbar.boundingBox();
     const beforeLesson = await lessonContent.boundingBox();
@@ -48,7 +49,8 @@ test.describe("lesson tutor drawer", () => {
 
     await page.goto("/learn/what-is-money");
 
-    const lessonContent = page.locator("#lesson-content");
+    const lessonContent = page.getByTestId("lesson-layout");
+    await expect(lessonContent).toBeVisible();
     const beforeLesson = await lessonContent.boundingBox();
 
     expect(beforeLesson).not.toBeNull();

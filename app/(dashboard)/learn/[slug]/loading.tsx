@@ -28,10 +28,7 @@ export default function LessonLoading() {
         <Skeleton className="h-4 w-full rounded-full" />
       </SkeletonSection>
 
-      <section
-        id="lesson-content"
-        className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]"
-      >
+      <section className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">
           <SkeletonSection>
             <Skeleton className="aspect-video w-full rounded-[1.75rem]" />

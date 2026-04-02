@@ -28,7 +28,10 @@ export function LessonWorkspace({
 
   return (
     <div>
-      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div
+        className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]"
+        data-testid="lesson-layout"
+      >
         <div className="space-y-6">
           <LessonVideoPlaceholder lesson={lesson} />
           <LessonContent lesson={lesson} />
