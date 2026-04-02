@@ -150,6 +150,48 @@ describe("activity route", () => {
     });
   });
 
+  it("falls back to cookie history when Supabase auth throws during reads", async () => {
+    cookieState.set(
+      "satoshilearn-activity",
+      JSON.stringify({
+        conversionEvents: [],
+        lessonCompletions: [
+          {
+            lessonSlug: "bitcoin-basics",
+            lessonTitle: "Bitcoin Basics",
+            completedAt: "2026-03-25T18:00:00.000Z",
+          },
+        ],
+        quizAttempts: [],
+        tutorPrompts: [],
+      }),
+    );
+
+    createServerSupabaseClient.mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockRejectedValue(new Error("network")),
+      },
+      from,
+    });
+
+    const { GET } = await import("@/app/api/activity/route");
+    const response = await GET();
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      conversionEvents: [],
+      lessonCompletions: [
+        {
+          lessonSlug: "bitcoin-basics",
+          lessonTitle: "Bitcoin Basics",
+          completedAt: "2026-03-25T18:00:00.000Z",
+        },
+      ],
+      quizAttempts: [],
+      tutorPrompts: [],
+    });
+  });
+
   it("stores lesson completions in the fallback cookie payload", async () => {
     const { POST, GET } = await import("@/app/api/activity/route");
     const response = await POST(
@@ -291,6 +333,24 @@ describe("activity route", () => {
     ]);
   });
 
+  it("rejects malformed activity payloads", async () => {
+    const { POST } = await import("@/app/api/activity/route");
+    const response = await POST(
+      new Request("http://localhost/api/activity", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: "{",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "Invalid activity payload.",
+    });
+  });
+
   it("falls back to cookies for signed-out users even when Supabase is configured", async () => {
     configureSupabaseActivityClient({
       userId: null,
@@ -366,6 +426,42 @@ describe("activity route", () => {
       user_id: "user-1",
     });
     expect(response.headers.get("set-cookie")).toBeNull();
+    await expect(response.json()).resolves.toEqual({
+      conversionEvents: [],
+      lessonCompletions: [
+        {
+          lessonSlug: "wallet-basics",
+          lessonTitle: "Wallet Basics",
+          completedAt: "2026-03-25T18:00:00.000Z",
+        },
+      ],
+      quizAttempts: [],
+      tutorPrompts: [],
+    });
+  });
+
+  it("falls back to cookies when Supabase writes throw unexpectedly", async () => {
+    configureSupabaseActivityClient();
+    insert.mockRejectedValue(new Error("network"));
+
+    const { POST } = await import("@/app/api/activity/route");
+    const response = await POST(
+      new Request("http://localhost/api/activity", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "lesson_completion",
+          lessonSlug: "wallet-basics",
+          lessonTitle: "Wallet Basics",
+          completedAt: "2026-03-25T18:00:00.000Z",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("set-cookie")).toContain("satoshilearn-activity=");
     await expect(response.json()).resolves.toEqual({
       conversionEvents: [],
       lessonCompletions: [

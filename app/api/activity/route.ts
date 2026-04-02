@@ -422,28 +422,49 @@ async function writeCookieHistory(history: LearningHistory) {
 }
 
 async function readSupabaseHistory() {
-  const supabase = await createServerSupabaseClient();
+  let supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>;
+
+  try {
+    supabase = await createServerSupabaseClient();
+  } catch {
+    return null;
+  }
 
   if (!supabase) {
     return null;
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user: { id: string } | null = null;
+
+  try {
+    const result = await supabase.auth.getUser();
+    user = result.data.user;
+  } catch {
+    return null;
+  }
 
   if (!user) {
     return null;
   }
 
-  const { data, error } = await supabase
-    .from("learning_activity")
-    .select(
-      "activity_type, lesson_slug, lesson_title, correct_count, total_questions, passed, created_at, activity_context, response_preview",
-    )
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(24);
+  let data: LearningActivityRow[] | null = null;
+  let error: { message?: string } | null = null;
+
+  try {
+    const result = await supabase
+      .from("learning_activity")
+      .select(
+        "activity_type, lesson_slug, lesson_title, correct_count, total_questions, passed, created_at, activity_context, response_preview",
+      )
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(24);
+
+    data = (result.data ?? null) as LearningActivityRow[] | null;
+    error = result.error;
+  } catch {
+    return null;
+  }
 
   if (error) {
     return null;
@@ -469,15 +490,26 @@ async function getPersistedHistoryResponse() {
 }
 
 async function writeSupabaseHistory(body: ActivityInsertBody): Promise<ActivityWriteResult> {
-  const supabase = await createServerSupabaseClient();
+  let supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>;
+
+  try {
+    supabase = await createServerSupabaseClient();
+  } catch {
+    return null;
+  }
 
   if (!supabase) {
     return null;
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user: { id: string } | null = null;
+
+  try {
+    const result = await supabase.auth.getUser();
+    user = result.data.user;
+  } catch {
+    return null;
+  }
 
   if (!user) {
     return null;
@@ -493,13 +525,23 @@ async function writeSupabaseHistory(body: ActivityInsertBody): Promise<ActivityW
   }
 
   if (activity.type === "lesson_completion") {
-    const { data: existingCompletion, error: existingError } = await supabase
-      .from("learning_activity")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("activity_type", "lesson_completion")
-      .eq("lesson_slug", activity.lessonSlug)
-      .maybeSingle();
+    let existingCompletion: { id: string } | null = null;
+    let existingError: { message?: string } | null = null;
+
+    try {
+      const result = await supabase
+        .from("learning_activity")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("activity_type", "lesson_completion")
+        .eq("lesson_slug", activity.lessonSlug)
+        .maybeSingle();
+
+      existingCompletion = result.data;
+      existingError = result.error;
+    } catch {
+      return null;
+    }
 
     if (existingError) {
       return null;
@@ -510,9 +552,17 @@ async function writeSupabaseHistory(body: ActivityInsertBody): Promise<ActivityW
     }
   }
 
-  const { error } = await supabase
-    .from("learning_activity")
-    .insert(toSupabaseInsertPayload(activity, user.id));
+  let error: { message?: string } | null = null;
+
+  try {
+    const result = await supabase
+      .from("learning_activity")
+      .insert(toSupabaseInsertPayload(activity, user.id));
+
+    error = result.error;
+  } catch {
+    return null;
+  }
 
   if (error) {
     return null;
@@ -532,7 +582,14 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as ActivityInsertBody;
+  let body: ActivityInsertBody;
+
+  try {
+    body = (await request.json()) as ActivityInsertBody;
+  } catch {
+    return invalidActivityResponse();
+  }
+
   const supabaseWrite = await writeSupabaseHistory(body);
 
   if (supabaseWrite) {
