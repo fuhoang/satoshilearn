@@ -159,4 +159,40 @@ describe("stripe checkout route", () => {
       error: "Unable to start checkout right now.",
     });
   });
+
+  it("returns a rate-limit response when Stripe rejects checkout creation", async () => {
+    createSession.mockRejectedValue({
+      type: "StripeRateLimitError",
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: "pro_monthly" }),
+      }),
+    );
+
+    expect(response.status).toBe(429);
+    await expect(response.json()).resolves.toEqual({
+      error: "Stripe is rate limiting checkout right now. Please try again in a minute.",
+    });
+  });
+
+  it("returns a service-unavailable response when customer setup throws", async () => {
+    ensureStripeCustomerForCurrentUser.mockRejectedValue(new Error("network"));
+
+    const response = await POST(
+      new Request("http://localhost/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: "pro_monthly" }),
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: "Unable to prepare checkout for this account right now.",
+    });
+  });
 });

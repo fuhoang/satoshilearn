@@ -58,4 +58,15 @@ describe("stripe portal route", () => {
       portalUrl: "https://billing.stripe.com/session/test",
     });
   });
+
+  it("returns a service-unavailable response when portal creation throws", async () => {
+    createBillingPortalSessionForCurrentUser.mockRejectedValue(new Error("network"));
+
+    const response = await POST();
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: "Unable to reach Stripe right now. Please try again shortly.",
+    });
+  });
 });

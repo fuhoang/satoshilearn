@@ -12,6 +12,48 @@ type CheckoutBody = {
   plan?: "pro_monthly" | "pro_yearly";
 };
 
+function getStripeCheckoutErrorResponse(error: unknown) {
+  const type = typeof error === "object" && error !== null && "type" in error
+    ? String((error as { type?: unknown }).type)
+    : "";
+  const code = typeof error === "object" && error !== null && "code" in error
+    ? String((error as { code?: unknown }).code)
+    : "";
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+
+  if (type === "StripeRateLimitError") {
+    return NextResponse.json(
+      { error: "Stripe is rate limiting checkout right now. Please try again in a minute." },
+      { status: 429 },
+    );
+  }
+
+  if (type === "StripeAuthenticationError") {
+    return NextResponse.json(
+      { error: "Stripe billing is temporarily unavailable." },
+      { status: 502 },
+    );
+  }
+
+  if (
+    type === "StripeAPIConnectionError" ||
+    code === "ECONNRESET" ||
+    code === "ETIMEDOUT" ||
+    message.includes("network") ||
+    message.includes("timeout")
+  ) {
+    return NextResponse.json(
+      { error: "Unable to reach Stripe right now. Please try again shortly." },
+      { status: 503 },
+    );
+  }
+
+  return NextResponse.json(
+    { error: "Unable to start checkout right now." },
+    { status: 502 },
+  );
+}
+
 export async function POST(request: Request) {
   const stripe = getStripe();
 
@@ -51,7 +93,16 @@ export async function POST(request: Request) {
     );
   }
 
-  const billingContext = await ensureStripeCustomerForCurrentUser();
+  let billingContext;
+
+  try {
+    billingContext = await ensureStripeCustomerForCurrentUser();
+  } catch {
+    return NextResponse.json(
+      { error: "Unable to prepare checkout for this account right now." },
+      { status: 503 },
+    );
+  }
 
   if (!billingContext) {
     return NextResponse.json(
@@ -60,22 +111,28 @@ export async function POST(request: Request) {
     );
   }
 
-  const session = await stripe.checkout.sessions.create({
-    cancel_url: getCancelUrl(),
-    customer: billingContext.customerId,
-    line_items: [
-      {
-        price: planDetails.priceId,
-        quantity: 1,
+  let session;
+
+  try {
+    session = await stripe.checkout.sessions.create({
+      cancel_url: getCancelUrl(),
+      customer: billingContext.customerId,
+      line_items: [
+        {
+          price: planDetails.priceId,
+          quantity: 1,
+        },
+      ],
+      metadata: {
+        plan_slug: plan,
+        user_id: billingContext.user.id,
       },
-    ],
-    metadata: {
-      plan_slug: plan,
-      user_id: billingContext.user.id,
-    },
-    mode: "subscription",
-    success_url: getSuccessUrl(),
-  });
+      mode: "subscription",
+      success_url: getSuccessUrl(),
+    });
+  } catch (error) {
+    return getStripeCheckoutErrorResponse(error);
+  }
 
   if (!session.url) {
     return NextResponse.json(

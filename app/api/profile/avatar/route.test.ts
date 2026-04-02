@@ -100,6 +100,41 @@ describe("profile avatar route", () => {
     });
   });
 
+  it("rejects malformed avatar removal payloads", async () => {
+    const { DELETE } = await import("@/app/api/profile/avatar/route");
+
+    const response = await DELETE(
+      new Request("http://localhost/api/profile/avatar", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: "{not-json",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "Send a valid avatar removal body.",
+    });
+  });
+
+  it("returns a service-unavailable response when avatar upload throws", async () => {
+    upload.mockRejectedValue(new Error("network"));
+    const { POST } = await import("@/app/api/profile/avatar/route");
+    const formData = new FormData();
+    formData.set("file", new File(["avatar"], "avatar.png", { type: "image/png" }));
+
+    const response = await POST({
+      formData: async () => formData,
+    } as Request);
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: "Unable to upload your avatar right now.",
+    });
+  });
+
   it("removes an owned avatar image", async () => {
     const { DELETE } = await import("@/app/api/profile/avatar/route");
 

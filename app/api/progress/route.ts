@@ -199,9 +199,20 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as
+  let body:
     | { slug?: string; complete?: boolean }
     | { completedLessonSlugs?: string[] };
+
+  try {
+    body = (await request.json()) as
+      | { slug?: string; complete?: boolean }
+      | { completedLessonSlugs?: string[] };
+  } catch {
+    return NextResponse.json(
+      { error: "Send a valid progress update body." },
+      { status: 400 },
+    );
+  }
 
   const current = await readWritableBaseProgress();
   const hasCompletedLessonSlugs =

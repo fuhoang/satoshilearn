@@ -62,7 +62,16 @@ function sanitizeAvatarUrl(value: unknown, userId: string) {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createServerSupabaseClient();
+  let supabase;
+
+  try {
+    supabase = await createServerSupabaseClient();
+  } catch {
+    return NextResponse.json(
+      { error: "Unable to reach Supabase right now." },
+      { status: 503 },
+    );
+  }
 
   if (!supabase) {
     return NextResponse.json(
@@ -71,9 +80,18 @@ export async function POST(request: Request) {
     );
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user;
+
+  try {
+    ({
+      data: { user },
+    } = await supabase.auth.getUser());
+  } catch {
+    return NextResponse.json(
+      { error: "Unable to verify your account right now." },
+      { status: 503 },
+    );
+  }
 
   if (!user) {
     return NextResponse.json(
@@ -82,32 +100,56 @@ export async function POST(request: Request) {
     );
   }
 
-  const body = (await request.json()) as {
+  let body: {
     avatar_url?: unknown;
     bio?: unknown;
     display_name?: unknown;
     timezone?: unknown;
   };
+
+  try {
+    body = (await request.json()) as {
+      avatar_url?: unknown;
+      bio?: unknown;
+      display_name?: unknown;
+      timezone?: unknown;
+    };
+  } catch {
+    return NextResponse.json(
+      { error: "Send a valid profile update body." },
+      { status: 400 },
+    );
+  }
   const displayName = sanitizeDisplayName(body.display_name);
   const avatarUrl = sanitizeAvatarUrl(body.avatar_url, user.id);
   const bio = sanitizeShortText(body.bio, 240);
   const timezone = sanitizeShortText(body.timezone, 100);
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .upsert(
-      {
-        avatar_url: avatarUrl,
-        bio,
-        id: user.id,
-        email: user.email ?? null,
-        display_name: displayName,
-        timezone,
-      },
-      { onConflict: "id" },
-    )
-    .select("id, email, display_name, avatar_url, bio, timezone, created_at")
-    .single();
+  let data;
+  let error;
+
+  try {
+    ({ data, error } = await supabase
+      .from("profiles")
+      .upsert(
+        {
+          avatar_url: avatarUrl,
+          bio,
+          id: user.id,
+          email: user.email ?? null,
+          display_name: displayName,
+          timezone,
+        },
+        { onConflict: "id" },
+      )
+      .select("id, email, display_name, avatar_url, bio, timezone, created_at")
+      .single());
+  } catch {
+    return NextResponse.json(
+      { error: "Unable to update your profile right now." },
+      { status: 503 },
+    );
+  }
 
   if (error) {
     const message =

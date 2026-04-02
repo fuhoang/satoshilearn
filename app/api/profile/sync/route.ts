@@ -4,7 +4,16 @@ import { syncProfileForUser } from "@/lib/profile";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function POST() {
-  const supabase = await createServerSupabaseClient();
+  let supabase;
+
+  try {
+    supabase = await createServerSupabaseClient();
+  } catch {
+    return NextResponse.json(
+      { error: "Unable to reach Supabase right now." },
+      { status: 503 },
+    );
+  }
 
   if (!supabase) {
     return NextResponse.json(
@@ -13,9 +22,18 @@ export async function POST() {
     );
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user;
+
+  try {
+    ({
+      data: { user },
+    } = await supabase.auth.getUser());
+  } catch {
+    return NextResponse.json(
+      { error: "Unable to verify your account right now." },
+      { status: 503 },
+    );
+  }
 
   if (!user) {
     return NextResponse.json(
@@ -24,7 +42,16 @@ export async function POST() {
     );
   }
 
-  const profile = await syncProfileForUser(user);
+  let profile;
+
+  try {
+    profile = await syncProfileForUser(user);
+  } catch {
+    return NextResponse.json(
+      { error: "Unable to sync your profile right now." },
+      { status: 503 },
+    );
+  }
 
   if (!profile) {
     return NextResponse.json(

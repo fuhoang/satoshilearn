@@ -87,4 +87,21 @@ describe("progress route", () => {
 
     expect(payload.completedLessonSlugs).toEqual([]);
   });
+
+  it("rejects malformed progress payloads", async () => {
+    const request = new Request("http://localhost/api/progress", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: "{not-json",
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "Send a valid progress update body.",
+    });
+  });
 });

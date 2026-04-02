@@ -204,4 +204,59 @@ describe("profile route", () => {
       { onConflict: "id" },
     );
   });
+
+  it("rejects malformed profile payloads", async () => {
+    getUser.mockResolvedValue({
+      data: {
+        user: {
+          id: "user-1",
+          email: "user@example.com",
+        },
+      },
+    });
+
+    const { POST } = await import("@/app/api/profile/route");
+    const response = await POST(
+      new Request("http://localhost/api/profile", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: "{not-json",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "Send a valid profile update body.",
+    });
+  });
+
+  it("returns a service-unavailable response when profile persistence throws", async () => {
+    getUser.mockResolvedValue({
+      data: {
+        user: {
+          id: "user-1",
+          email: "user@example.com",
+        },
+      },
+    });
+    single.mockRejectedValue(new Error("network"));
+
+    const { POST } = await import("@/app/api/profile/route");
+    const response = await POST(
+      new Request("http://localhost/api/profile", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ display_name: "Satoshi" }),
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: "Unable to update your profile right now.",
+    });
+  });
 });

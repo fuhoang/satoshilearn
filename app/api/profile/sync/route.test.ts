@@ -62,4 +62,21 @@ describe("profile sync route", () => {
     expect(response.status).toBe(200);
     expect(payload.profile.id).toBe("user-1");
   });
+
+  it("returns a service-unavailable response when auth verification throws", async () => {
+    createServerSupabaseClient.mockResolvedValue({
+      auth: {
+        getUser,
+      },
+    });
+    getUser.mockRejectedValue(new Error("network"));
+
+    const { POST } = await import("@/app/api/profile/sync/route");
+    const response = await POST();
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: "Unable to verify your account right now.",
+    });
+  });
 });
