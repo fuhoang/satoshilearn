@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 
 import { useLearningHistory } from "@/hooks/useLearningHistory";
+import { getApiErrorMessage, getNetworkErrorMessage } from "@/lib/client-api";
 import type { ChatMessage } from "@/types/chat";
 
 type TutorUsage = {
@@ -63,16 +64,29 @@ export function useChat(
         }),
       });
 
-      const data = (await response.json()) as {
+      const data = (await response.clone().json().catch(() => null)) as {
         error?: string;
         reply?: string;
         recordedAt?: string;
         topic?: string;
         usage?: TutorUsage;
-      };
+      } | null;
 
-      if (!response.ok || !data.reply) {
-        throw new Error(data.error ?? "Unable to get a tutor response right now.");
+      if (!response.ok || !data?.reply) {
+        throw new Error(await getApiErrorMessage(response, {
+          badRequestMessage: "Please enter a clear tutor question and try again.",
+          fallbackMessage: "Unable to get a tutor response right now.",
+          networkMessage:
+            "We couldn't reach the tutor right now. Please try again shortly.",
+          rateLimitMessage:
+            "The tutor is busy right now. Please wait a minute and try again.",
+          unauthorizedMessage:
+            options.source === "home"
+              ? "Log in to keep chatting with the AI tutor."
+              : "Log in to use the AI tutor.",
+          unavailableMessage:
+            "The tutor is temporarily unavailable. Please try again shortly.",
+        }));
       }
 
       const reply = data.reply;
@@ -95,7 +109,13 @@ export function useChat(
       const message =
         caughtError instanceof Error
           ? caughtError.message
-          : "Unable to get a tutor response right now.";
+          : getNetworkErrorMessage({
+            fallbackMessage: "Unable to get a tutor response right now.",
+            networkMessage:
+              "We couldn't reach the tutor right now. Please try again shortly.",
+            unavailableMessage:
+              "The tutor is temporarily unavailable. Please try again shortly.",
+          });
 
       setError(message);
     } finally {

@@ -4,6 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { useLearningHistory } from "@/hooks/useLearningHistory";
+import {
+  getApiErrorMessage,
+  getNetworkErrorMessage,
+} from "@/lib/client-api";
 
 type PlanKey = "pro_monthly" | "pro_yearly";
 
@@ -38,12 +42,26 @@ export function BillingActions({
         },
         body: JSON.stringify({ plan }),
       });
-      const payload = (await response.json()) as
-        | { checkoutUrl?: string; error?: string }
-        | undefined;
+      const payload = (await response.clone().json().catch(() => null)) as
+        | { checkoutUrl?: string }
+        | null;
+
+      if (response.status === 401) {
+        window.location.assign("/auth/login?next=/purchases");
+        return;
+      }
 
       if (!response.ok || !payload?.checkoutUrl) {
-        setError(payload?.error ?? "Unable to start checkout right now.");
+        setError(await getApiErrorMessage(response, {
+          badRequestMessage: "Please double-check your billing choice and try again.",
+          fallbackMessage: "Unable to start checkout right now.",
+          networkMessage: "We couldn't reach billing right now. Please try again shortly.",
+          rateLimitMessage:
+            "Billing is busy right now. Please wait a minute and try again.",
+          unauthorizedMessage: "Log in to continue to checkout.",
+          unavailableMessage:
+            "Billing is temporarily unavailable. Please try again shortly.",
+        }));
         return;
       }
 
@@ -57,7 +75,12 @@ export function BillingActions({
 
       window.location.assign(payload.checkoutUrl);
     } catch {
-      setError("Unable to start checkout right now.");
+      setError(getNetworkErrorMessage({
+        fallbackMessage: "Unable to start checkout right now.",
+        networkMessage: "We couldn't reach billing right now. Please try again shortly.",
+        unavailableMessage:
+          "Billing is temporarily unavailable. Please try again shortly.",
+      }));
     } finally {
       setLoadingAction(null);
     }
@@ -71,18 +94,36 @@ export function BillingActions({
       const response = await fetch("/api/stripe/portal", {
         method: "POST",
       });
-      const payload = (await response.json()) as
-        | { portalUrl?: string; error?: string }
-        | undefined;
+      const payload = (await response.clone().json().catch(() => null)) as
+        | { portalUrl?: string }
+        | null;
+
+      if (response.status === 401) {
+        window.location.assign("/auth/login?next=/purchases");
+        return;
+      }
 
       if (!response.ok || !payload?.portalUrl) {
-        setError(payload?.error ?? "Unable to open billing portal right now.");
+        setError(await getApiErrorMessage(response, {
+          fallbackMessage: "Unable to open billing portal right now.",
+          networkMessage: "We couldn't reach billing right now. Please try again shortly.",
+          rateLimitMessage:
+            "Billing portal access is busy right now. Please wait a minute and try again.",
+          unauthorizedMessage: "Log in to manage billing.",
+          unavailableMessage:
+            "Billing portal is temporarily unavailable. Please try again shortly.",
+        }));
         return;
       }
 
       window.location.assign(payload.portalUrl);
     } catch {
-      setError("Unable to open billing portal right now.");
+      setError(getNetworkErrorMessage({
+        fallbackMessage: "Unable to open billing portal right now.",
+        networkMessage: "We couldn't reach billing right now. Please try again shortly.",
+        unavailableMessage:
+          "Billing portal is temporarily unavailable. Please try again shortly.",
+      }));
     } finally {
       setLoadingAction(null);
     }
