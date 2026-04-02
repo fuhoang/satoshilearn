@@ -49,7 +49,10 @@ test.describe("happy paths", () => {
     });
 
     await page.goto("/pricing");
-    await page.getByRole("button", { name: "Upgrade to Pro" }).click();
+    await page
+      .getByRole("button", { name: /Upgrade to Pro|Upgrade to yearly|Choose yearly/ })
+      .first()
+      .click();
 
     await page.waitForURL("**/learn-crypto");
     await expect(page).toHaveURL(/\/learn-crypto$/);
