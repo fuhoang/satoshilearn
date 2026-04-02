@@ -4,7 +4,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import { absoluteUrl } from "@/lib/seo";
 import { getProfileSummary } from "@/lib/profile";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getStripeServerEnv } from "@/lib/supabase/config";
+import { getStripeServerEnv, isE2EAuthBypassEnabled } from "@/lib/supabase/config";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getStripePriceMap } from "@/lib/stripe";
 import type {
@@ -60,6 +60,38 @@ const FREE_PLAN_SUMMARY =
   "You can access the full live Bitcoin curriculum, quizzes, dashboard history, and account tools on the free plan today.";
 const PRO_PLAN_SUMMARY =
   "Your account has Pro billing access, including future premium tracks, stronger tutor access, and purchase history in the billing hub.";
+
+const E2E_BILLING_SNAPSHOT: BillingSnapshot = {
+  configured: true,
+  customerId: "cus_e2e_123",
+  purchaseEvents: [
+    {
+      id: "evt_e2e_invoice_paid",
+      user_id: "e2e-profile-id",
+      subscription_id: "sub_e2e_123",
+      stripe_invoice_id: "in_e2e_123",
+      stripe_checkout_session_id: "cs_e2e_123",
+      event_type: "invoice.paid",
+      amount_cents: 1499,
+      currency: "gbp",
+      status: "paid",
+      created_at: "2026-03-01T09:00:00.000Z",
+    },
+  ],
+  subscription: {
+    user_id: "e2e-profile-id",
+    stripe_customer_id: "cus_e2e_123",
+    stripe_subscription_id: "sub_e2e_123",
+    stripe_price_id: "price_e2e_monthly",
+    plan_slug: "pro_monthly",
+    status: "active",
+    current_period_start: "2026-03-01T09:00:00.000Z",
+    current_period_end: "2026-04-01T09:00:00.000Z",
+    cancel_at_period_end: false,
+    created_at: "2026-03-01T09:00:00.000Z",
+    updated_at: "2026-03-01T09:00:00.000Z",
+  },
+};
 
 function toIsoTimestamp(value: number | null | undefined) {
   return typeof value === "number" ? new Date(value * 1000).toISOString() : null;
@@ -218,6 +250,10 @@ export function getAccountStatus(snapshot: BillingSnapshot): AccountStatus {
 
 export async function getBillingSnapshotForCurrentUser(): Promise<BillingSnapshot> {
   noStore();
+
+  if (isE2EAuthBypassEnabled()) {
+    return E2E_BILLING_SNAPSHOT;
+  }
 
   const supabase = await createServerSupabaseClient();
   const admin = createSupabaseAdminClient();

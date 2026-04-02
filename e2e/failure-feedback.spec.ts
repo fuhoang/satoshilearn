@@ -13,7 +13,10 @@ test.describe("failure feedback", () => {
     });
 
     await page.goto("/pricing");
-    await page.getByRole("button", { name: "Upgrade to Pro" }).click();
+    await page
+      .getByRole("button", { name: /Upgrade to Pro|Upgrade to yearly|Choose yearly/ })
+      .first()
+      .click();
 
     await expect(
       page.getByText("Billing is temporarily unavailable. Please try again shortly."),

@@ -12,6 +12,10 @@ export function getSupabaseBrowserEnv() {
   };
 }
 
+export function isE2EAuthBypassEnabled() {
+  return process.env.E2E_AUTH_BYPASS === "1";
+}
+
 export function hasSupabaseEnv() {
   return getSupabaseBrowserEnv() !== null;
 }

@@ -1,8 +1,19 @@
 import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 
+import { isE2EAuthBypassEnabled } from "@/lib/supabase/config";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { Profile } from "@/types/profile";
+
+const E2E_PROFILE: Profile = {
+  id: "e2e-profile-id",
+  email: "learner@blockwise.dev",
+  display_name: "Satoshi Learner",
+  avatar_url: "https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=crop&w=200&q=80",
+  bio: "Learning Bitcoin one clear step at a time.",
+  timezone: "Europe/London",
+  created_at: "2025-01-15T10:00:00.000Z",
+};
 
 export async function syncProfileForUser(user: User) {
   const supabase = await createServerSupabaseClient();
@@ -31,6 +42,10 @@ export async function syncProfileForUser(user: User) {
 }
 
 export async function getOrCreateProfile() {
+  if (isE2EAuthBypassEnabled()) {
+    return E2E_PROFILE;
+  }
+
   const supabase = await createServerSupabaseClient();
 
   if (!supabase) {
