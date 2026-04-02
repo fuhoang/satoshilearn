@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/Button";
+import { getApiErrorMessage, getNetworkErrorMessage } from "@/lib/client-api";
 import type { Profile } from "@/types/profile";
 
 type ProfileDetailsFormProps = {
@@ -103,73 +104,101 @@ export function ProfileDetailsForm({ profile }: ProfileDetailsFormProps) {
     const previousAvatarUrl = avatarUrlToDelete ?? avatarUrl;
     let nextAvatarUrl = avatarUrl;
 
-    if (avatarFile) {
-      const uploadFormData = new FormData();
-      uploadFormData.set("file", avatarFile);
+    try {
+      if (avatarFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.set("file", avatarFile);
 
-      const uploadResponse = await fetch("/api/profile/avatar", {
+        const uploadResponse = await fetch("/api/profile/avatar", {
+          method: "POST",
+          body: uploadFormData,
+        });
+
+        if (!uploadResponse.ok) {
+          setError(await getApiErrorMessage(uploadResponse, {
+            badRequestMessage: "Please choose a valid JPG, PNG, or WebP image under 2MB.",
+            fallbackMessage: "Unable to upload your avatar right now.",
+            networkMessage:
+              "We couldn't reach profile services right now. Please try again shortly.",
+            rateLimitMessage:
+              "Avatar uploads are busy right now. Please wait a minute and try again.",
+            unauthorizedMessage: "Your session expired. Log in again and retry.",
+            unavailableMessage:
+              "Profile services are temporarily unavailable. Please try again shortly.",
+          }));
+          setIsSaving(false);
+          return;
+        }
+
+        const payload = (await uploadResponse.json()) as { avatarUrl?: string };
+        nextAvatarUrl = payload.avatarUrl ?? "";
+        setMessage("Avatar uploaded. Finishing your profile update...");
+      }
+
+      const response = await fetch("/api/profile", {
         method: "POST",
-        body: uploadFormData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          avatar_url: nextAvatarUrl,
+          bio,
+          display_name: displayName,
+          timezone,
+        }),
       });
 
-      if (!uploadResponse.ok) {
-        const payload = (await uploadResponse.json().catch(() => null)) as
-          | { error?: string }
-          | null;
-        setError(payload?.error ?? "Unable to upload your avatar right now.");
+      if (!response.ok) {
+        if (nextAvatarUrl && nextAvatarUrl !== previousAvatarUrl) {
+          void deleteAvatar(nextAvatarUrl);
+        }
+        setError(await getApiErrorMessage(response, {
+          badRequestMessage: "Please review your profile details and try again.",
+          fallbackMessage: "Unable to update your profile right now.",
+          networkMessage:
+            "We couldn't reach profile services right now. Please try again shortly.",
+          rateLimitMessage:
+            "Profile updates are busy right now. Please wait a minute and try again.",
+          unauthorizedMessage: "Your session expired. Log in again and retry.",
+          unavailableMessage:
+            "Profile services are temporarily unavailable. Please try again shortly.",
+        }));
         setIsSaving(false);
         return;
       }
 
-      const payload = (await uploadResponse.json()) as { avatarUrl?: string };
-      nextAvatarUrl = payload.avatarUrl ?? "";
-      setMessage("Avatar uploaded. Finishing your profile update...");
-    }
+      const payload = (await response.json()) as { profile?: Profile };
+      const nextProfile = payload.profile ?? profile;
 
-    const response = await fetch("/api/profile", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        avatar_url: nextAvatarUrl,
-        bio,
-        display_name: displayName,
-        timezone,
-      }),
-    });
-
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as
-        | { error?: string }
-        | null;
+      setDisplayName(nextProfile.display_name ?? "");
+      setAvatarUrl(nextProfile.avatar_url ?? "");
+      setAvatarUrlToDelete(null);
+      setAvatarFile(null);
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = "";
+      }
+      setBio(nextProfile.bio ?? "");
+      setTimezone(nextProfile.timezone ?? "");
+      setSavedName(nextProfile.display_name ?? "");
+      setMessage("Profile updated.");
+      setIsSaving(false);
+      if (previousAvatarUrl && previousAvatarUrl !== nextProfile.avatar_url) {
+        void deleteAvatar(previousAvatarUrl);
+      }
+      router.refresh();
+    } catch {
       if (nextAvatarUrl && nextAvatarUrl !== previousAvatarUrl) {
         void deleteAvatar(nextAvatarUrl);
       }
-      setError(payload?.error ?? "Unable to update your profile right now.");
+      setError(getNetworkErrorMessage({
+        fallbackMessage: "Unable to update your profile right now.",
+        networkMessage:
+          "We couldn't reach profile services right now. Please try again shortly.",
+        unavailableMessage:
+          "Profile services are temporarily unavailable. Please try again shortly.",
+      }));
       setIsSaving(false);
-      return;
     }
-
-    const payload = (await response.json()) as { profile?: Profile };
-    const nextProfile = payload.profile ?? profile;
-
-    setDisplayName(nextProfile.display_name ?? "");
-    setAvatarUrl(nextProfile.avatar_url ?? "");
-    setAvatarUrlToDelete(null);
-    setAvatarFile(null);
-    if (avatarInputRef.current) {
-      avatarInputRef.current.value = "";
-    }
-    setBio(nextProfile.bio ?? "");
-    setTimezone(nextProfile.timezone ?? "");
-    setSavedName(nextProfile.display_name ?? "");
-    setMessage("Profile updated.");
-    setIsSaving(false);
-    if (previousAvatarUrl && previousAvatarUrl !== nextProfile.avatar_url) {
-      void deleteAvatar(previousAvatarUrl);
-    }
-    router.refresh();
   }
 
   return (
