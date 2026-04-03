@@ -51,3 +51,16 @@ export function getStripeServerEnv() {
     yearlyPriceId,
   };
 }
+
+export function getOpenAIServerEnv() {
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  if (!apiKey) {
+    return null;
+  }
+
+  return {
+    apiKey,
+    model: process.env.OPENAI_MODEL ?? "gpt-5-mini",
+  };
+}
