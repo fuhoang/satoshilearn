@@ -15,6 +15,8 @@ const CHAT_RATE_WINDOW_MS = 60_000;
 const TUTOR_PROMPT_PREVIEW_MAX = 160;
 const GUEST_TUTOR_REQUEST_LIMIT = 3;
 const GUEST_TUTOR_COOKIE = "blockwise_guest_tutor_id";
+const GUEST_TUTOR_USAGE_COOKIE = "blockwise_guest_tutor_usage";
+const GUEST_TUTOR_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 const GUEST_LIMIT_ERROR =
   "You have used the guest AI demo for now. Log in to keep chatting.";
 const TUTOR_UNAVAILABLE_ERROR =
@@ -46,6 +48,63 @@ function buildRateLimitResponse(resetAt: number, error: string) {
       },
     },
   );
+}
+
+function buildGuestCookieOptions(maxAgeSeconds: number) {
+  return {
+    httpOnly: true,
+    maxAge: maxAgeSeconds,
+    path: "/",
+    sameSite: "lax" as const,
+  };
+}
+
+function readGuestUsageCount(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(value) as { count?: unknown };
+
+    if (
+      typeof parsed.count !== "number" ||
+      !Number.isFinite(parsed.count)
+    ) {
+      return null;
+    }
+
+    return parsed.count;
+  } catch {
+    return null;
+  }
+}
+
+function getGuestUsageResult(existingValue: string | null) {
+  const currentCount = readGuestUsageCount(existingValue) ?? 0;
+  const resetAt = Date.now() + GUEST_TUTOR_COOKIE_MAX_AGE * 1000;
+
+  if (currentCount >= GUEST_TUTOR_REQUEST_LIMIT) {
+    return {
+      allowed: false,
+      remaining: 0,
+      resetAt,
+      shouldPersist: false,
+      value: existingValue ?? "",
+    };
+  }
+
+  const nextCount = currentCount + 1;
+
+  return {
+    allowed: true,
+    remaining: GUEST_TUTOR_REQUEST_LIMIT - nextCount,
+    resetAt,
+    shouldPersist: true,
+    value: JSON.stringify({
+      count: nextCount,
+    }),
+  };
 }
 
 export async function POST(request: Request) {
@@ -95,26 +154,20 @@ export async function POST(request: Request) {
 
       const cookieStore = await cookies();
       const existingGuestId = cookieStore.get(GUEST_TUTOR_COOKIE)?.value ?? null;
+      const existingGuestUsage =
+        cookieStore.get(GUEST_TUTOR_USAGE_COOKIE)?.value ?? null;
       const guestId = existingGuestId ?? crypto.randomUUID();
-      const limitResult = checkRateLimit(
-        `chat:guest:${guestId}`,
-        GUEST_TUTOR_REQUEST_LIMIT,
-        CHAT_RATE_WINDOW_MS,
-      );
+      const limitResult = getGuestUsageResult(existingGuestUsage);
 
       if (!limitResult.allowed) {
-        const response = buildRateLimitResponse(
-          limitResult.resetAt,
-          GUEST_LIMIT_ERROR,
-        );
+        const response = jsonError(GUEST_LIMIT_ERROR, 429);
 
         if (!existingGuestId) {
-          response.cookies.set(GUEST_TUTOR_COOKIE, guestId, {
-            httpOnly: true,
-            maxAge: 60 * 60 * 24 * 30,
-            path: "/",
-            sameSite: "lax",
-          });
+          response.cookies.set(
+            GUEST_TUTOR_COOKIE,
+            guestId,
+            buildGuestCookieOptions(GUEST_TUTOR_COOKIE_MAX_AGE),
+          );
         }
 
         return response;
@@ -140,12 +193,19 @@ export async function POST(request: Request) {
       });
 
       if (!existingGuestId) {
-        response.cookies.set(GUEST_TUTOR_COOKIE, guestId, {
-          httpOnly: true,
-          maxAge: 60 * 60 * 24 * 30,
-          path: "/",
-          sameSite: "lax",
-        });
+        response.cookies.set(
+          GUEST_TUTOR_COOKIE,
+          guestId,
+          buildGuestCookieOptions(GUEST_TUTOR_COOKIE_MAX_AGE),
+        );
+      }
+
+      if (limitResult.shouldPersist) {
+        response.cookies.set(
+          GUEST_TUTOR_USAGE_COOKIE,
+          limitResult.value,
+          buildGuestCookieOptions(GUEST_TUTOR_COOKIE_MAX_AGE),
+        );
       }
 
       return response;

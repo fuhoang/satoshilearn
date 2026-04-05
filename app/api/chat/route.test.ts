@@ -156,7 +156,7 @@ describe("chat route", () => {
       }),
     );
 
-    expect(checkRateLimit).toHaveBeenCalledWith(
+    expect(checkRateLimit).not.toHaveBeenCalledWith(
       expect.stringMatching(/^chat:guest:/),
       3,
       60_000,
@@ -164,13 +164,14 @@ describe("chat route", () => {
     expect(from).not.toHaveBeenCalledWith("learning_activity");
     expect(response.status).toBe(200);
     expect(response.headers.get("set-cookie")).toContain("blockwise_guest_tutor_id=");
+    expect(response.headers.get("set-cookie")).toContain("blockwise_guest_tutor_usage=");
     await expect(response.json()).resolves.toEqual({
       reply: "Bitcoin reply",
       recordedAt: expect.any(String),
       topic: "Bitcoin foundations",
       usage: {
         limit: 3,
-        remaining: 9,
+        remaining: 2,
         plan: "free",
         resetAt: expect.any(Number),
       },
@@ -181,13 +182,23 @@ describe("chat route", () => {
     getUser.mockResolvedValue({
       data: { user: null },
     });
-    cookieGet.mockReturnValue({
-      value: "guest-1",
-    });
-    checkRateLimit.mockReturnValue({
-      allowed: false,
-      remaining: 0,
-      resetAt: Date.now() + 60_000,
+    cookieGet.mockImplementation((name: string) => {
+      if (name === "blockwise_guest_tutor_id") {
+        return {
+          value: "guest-1",
+        };
+      }
+
+      if (name === "blockwise_guest_tutor_usage") {
+        return {
+          value: JSON.stringify({
+            count: 3,
+            resetAt: Date.now() + 60_000,
+          }),
+        };
+      }
+
+      return undefined;
     });
 
     const response = await POST(
@@ -203,6 +214,86 @@ describe("chat route", () => {
     expect(response.status).toBe(429);
     await expect(response.json()).resolves.toEqual({
       error: "You have used the guest AI demo for now. Log in to keep chatting.",
+    });
+  });
+
+  it("rate limits the guest home-page demo from the usage cookie", async () => {
+    getUser.mockResolvedValue({
+      data: { user: null },
+    });
+    cookieGet.mockImplementation((name: string) => {
+      if (name === "blockwise_guest_tutor_id") {
+        return {
+          value: "guest-1",
+        };
+      }
+
+      if (name === "blockwise_guest_tutor_usage") {
+        return {
+          value: JSON.stringify({
+            count: 3,
+          }),
+        };
+      }
+
+      return undefined;
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: "What is Bitcoin?", source: "home" }),
+      }),
+    );
+
+    expect(response.status).toBe(429);
+    await expect(response.json()).resolves.toEqual({
+      error: "You have used the guest AI demo for now. Log in to keep chatting.",
+    });
+  });
+
+  it("increments the guest home-page usage cookie up to the limit", async () => {
+    getUser.mockResolvedValue({
+      data: { user: null },
+    });
+    createTutorReply.mockResolvedValue("Bitcoin reply");
+    cookieGet.mockImplementation((name: string) => {
+      if (name === "blockwise_guest_tutor_usage") {
+        return {
+          value: JSON.stringify({
+            count: 2,
+          }),
+        };
+      }
+
+      return undefined;
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: "What is Bitcoin?", source: "home" }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("set-cookie")).toContain("blockwise_guest_tutor_usage=");
+    await expect(response.json()).resolves.toEqual({
+      reply: "Bitcoin reply",
+      recordedAt: expect.any(String),
+      topic: "Bitcoin foundations",
+      usage: {
+        limit: 3,
+        remaining: 0,
+        plan: "free",
+        resetAt: expect.any(Number),
+      },
     });
   });
 
