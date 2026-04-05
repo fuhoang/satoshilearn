@@ -6,7 +6,11 @@ import {
   jsonError,
   parseJsonBody,
 } from "@/lib/api-route";
-import { getTutorRequestLimit, hasProAccess } from "@/lib/billing";
+import {
+  getBillingSnapshotForCurrentUser,
+  getTutorRequestLimit,
+  hasProAccess,
+} from "@/lib/billing";
 import { createTutorReply, inferTutorTopic } from "@/lib/openai";
 
 const MAX_MESSAGE_LENGTH = 500;
@@ -262,28 +266,15 @@ export async function POST(request: Request) {
       return response;
     }
 
-    let subscription = null;
+    let billingSnapshot;
 
     try {
-      const subscriptionResult = await supabaseResult.supabase
-        .from("subscriptions")
-        .select(
-          "user_id, stripe_customer_id, stripe_subscription_id, stripe_price_id, plan_slug, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at",
-        )
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      subscription = subscriptionResult.data ?? null;
+      billingSnapshot = await getBillingSnapshotForCurrentUser();
     } catch {
       return jsonError("Unable to load tutor access right now.", 503);
     }
 
-    const tutorRequestLimit = getTutorRequestLimit({
-      configured: true,
-      customerId: null,
-      purchaseEvents: [],
-      subscription,
-    });
+    const tutorRequestLimit = getTutorRequestLimit(billingSnapshot);
 
     let limitResult;
 
@@ -316,15 +307,19 @@ export async function POST(request: Request) {
     const responsePreview = reply.slice(0, TUTOR_PROMPT_PREVIEW_MAX);
     const recordedAt = new Date().toISOString();
 
-    void supabaseResult.supabase.from("learning_activity").insert({
-      activity_context: topic,
-      activity_type: "tutor_prompt",
-      created_at: recordedAt,
-      lesson_slug: "ai-tutor",
-      lesson_title: message,
-      response_preview: responsePreview,
-      user_id: user.id,
-    });
+    try {
+      await supabaseResult.supabase.from("learning_activity").insert({
+        activity_context: topic,
+        activity_type: "tutor_prompt",
+        created_at: recordedAt,
+        lesson_slug: "ai-tutor",
+        lesson_title: message,
+        response_preview: responsePreview,
+        user_id: user.id,
+      });
+    } catch {
+      return jsonError("Unable to save tutor activity right now.", 503);
+    }
 
     return NextResponse.json({
       reply,
@@ -335,14 +330,7 @@ export async function POST(request: Request) {
           remaining: Math.max(0, limitResult.remaining - 1),
           resetAt: limitResult.resetAt,
         }),
-        plan: hasProAccess({
-          configured: true,
-          customerId: null,
-          purchaseEvents: [],
-          subscription,
-        })
-          ? "pro"
-          : "free",
+        plan: hasProAccess(billingSnapshot) ? "pro" : "free",
       },
     });
   } catch {

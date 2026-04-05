@@ -3,11 +3,9 @@ import { POST } from "@/app/api/chat/route";
 const createTutorReply = vi.fn();
 const getUser = vi.fn();
 const createServerSupabaseClient = vi.fn();
+const getBillingSnapshotForCurrentUser = vi.fn();
 const insert = vi.fn();
 const from = vi.fn();
-const subscriptionMaybeSingle = vi.fn();
-const subscriptionEq = vi.fn();
-const subscriptionSelect = vi.fn();
 const activityUsageLt = vi.fn();
 const activityUsageGte = vi.fn();
 const activityUsageEqType = vi.fn();
@@ -19,6 +17,19 @@ const cookieGet = vi.fn();
 vi.mock("@/lib/openai", () => ({
   createTutorReply: (message: string) => createTutorReply(message),
   inferTutorTopic: () => "Bitcoin foundations",
+}));
+
+vi.mock("@/lib/billing", () => ({
+  getBillingSnapshotForCurrentUser: () => getBillingSnapshotForCurrentUser(),
+  getTutorRequestLimit: (snapshot: {
+    configured: boolean;
+    customerId: string | null;
+    purchaseEvents: unknown[];
+    subscription: { status: string } | null;
+  }) => (snapshot.subscription ? 30 : 10),
+  hasProAccess: (snapshot: {
+    subscription: { status: string } | null;
+  }) => Boolean(snapshot.subscription),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -34,11 +45,9 @@ describe("chat route", () => {
     createTutorReply.mockReset();
     getUser.mockReset();
     createServerSupabaseClient.mockReset();
+    getBillingSnapshotForCurrentUser.mockReset();
     insert.mockReset();
     from.mockReset();
-    subscriptionMaybeSingle.mockReset();
-    subscriptionEq.mockReset();
-    subscriptionSelect.mockReset();
     activityUsageLt.mockReset();
     activityUsageGte.mockReset();
     activityUsageEqType.mockReset();
@@ -59,12 +68,11 @@ describe("chat route", () => {
         },
       },
     });
-    subscriptionMaybeSingle.mockResolvedValue({ data: null });
-    subscriptionEq.mockReturnValue({
-      maybeSingle: subscriptionMaybeSingle,
-    });
-    subscriptionSelect.mockReturnValue({
-      eq: subscriptionEq,
+    getBillingSnapshotForCurrentUser.mockResolvedValue({
+      configured: true,
+      customerId: null,
+      purchaseEvents: [],
+      subscription: null,
     });
     activityUsageLt.mockResolvedValue({ count: 0 });
     activityUsageGte.mockReturnValue({
@@ -80,12 +88,6 @@ describe("chat route", () => {
       eq: activityUsageEqUser,
     });
     from.mockImplementation((table: string) => {
-      if (table === "subscriptions") {
-        return {
-          select: subscriptionSelect,
-        };
-      }
-
       if (table === "learning_activity") {
         return {
           insert,
@@ -367,8 +369,11 @@ describe("chat route", () => {
   });
 
   it("returns a larger tutor limit for pro users", async () => {
-    subscriptionMaybeSingle.mockResolvedValue({
-      data: {
+    getBillingSnapshotForCurrentUser.mockResolvedValue({
+      configured: true,
+      customerId: "cus_123",
+      purchaseEvents: [],
+      subscription: {
         user_id: "user-1",
         stripe_customer_id: "cus_123",
         stripe_subscription_id: "sub_123",
@@ -469,6 +474,26 @@ describe("chat route", () => {
     expect(response.status).toBe(503);
     await expect(response.json()).resolves.toEqual({
       error: "The tutor is temporarily unavailable. Please try again shortly.",
+    });
+  });
+
+  it("returns a service-unavailable response when tutor activity cannot be saved", async () => {
+    createTutorReply.mockResolvedValue("Bitcoin reply");
+    insert.mockRejectedValue(new Error("write failed"));
+
+    const response = await POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: "What is Bitcoin?" }),
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: "Unable to save tutor activity right now.",
     });
   });
 

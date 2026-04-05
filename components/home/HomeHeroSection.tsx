@@ -21,6 +21,7 @@ export function HomeHeroSection({
   currentPlanSlug?: string | null;
   isAuthenticated?: boolean;
 }) {
+  const initialUsageResetAt = 0;
   const [prompt, setPrompt] = useState("");
   const [submittedPrompt, setSubmittedPrompt] = useState("");
   const [promptVersion, setPromptVersion] = useState(0);
@@ -32,20 +33,20 @@ export function HomeHeroSection({
       limit: 30,
       plan: "pro" as const,
       remaining: 30,
-      resetAt: Date.now(),
+      resetAt: initialUsageResetAt,
     }
     : isAuthenticated
       ? {
         limit: 10,
         plan: "free" as const,
         remaining: 10,
-        resetAt: Date.now(),
+        resetAt: initialUsageResetAt,
       }
       : {
         limit: 3,
         plan: "free" as const,
         remaining: 3,
-        resetAt: Date.now(),
+        resetAt: initialUsageResetAt,
       };
 
   function openConversation(nextPrompt?: string) {

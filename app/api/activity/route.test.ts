@@ -299,6 +299,57 @@ describe("activity route", () => {
     expect(payload.conversionEvents).toEqual([]);
   });
 
+  it("does not insert duplicate tutor prompts for authenticated users", async () => {
+    configureSupabaseActivityClient({
+      rows: [
+        {
+          activity_context: "Bitcoin foundations",
+          activity_type: "tutor_prompt",
+          correct_count: null,
+          created_at: "2026-03-25T18:10:00.000Z",
+          lesson_slug: "ai-tutor",
+          lesson_title: "How does Bitcoin supply work?",
+          passed: null,
+          response_preview: "Bitcoin supply is capped at 21 million.",
+          total_questions: null,
+        },
+      ],
+    });
+
+    const { POST } = await import("@/app/api/activity/route");
+    const response = await POST(
+      new Request("http://localhost/api/activity", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "tutor_prompt",
+          lessonSlug: "ai-tutor",
+          lessonTitle: "How does Bitcoin supply work?",
+          repliedAt: "2026-03-25T18:10:00.000Z",
+          responsePreview: "Bitcoin supply is capped at 21 million.",
+          topic: "Bitcoin foundations",
+        }),
+      }),
+    );
+
+    expect(insert).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toEqual({
+      conversionEvents: [],
+      lessonCompletions: [],
+      quizAttempts: [],
+      tutorPrompts: [
+        {
+          prompt: "How does Bitcoin supply work?",
+          repliedAt: "2026-03-25T18:10:00.000Z",
+          responsePreview: "Bitcoin supply is capped at 21 million.",
+          topic: "Bitcoin foundations",
+        },
+      ],
+    });
+  });
+
   it("stores conversion events in the fallback cookie payload", async () => {
     const { POST } = await import("@/app/api/activity/route");
     const response = await POST(
