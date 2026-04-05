@@ -86,6 +86,8 @@ const EMPTY_MESSAGE_REPLY =
   "Ask about Bitcoin, money, wallets, or transactions and I will break it down step by step.";
 const NON_CRYPTO_REPLY =
   "Sorry, I only answer Bitcoin and crypto learning questions here. Try something like: What is Bitcoin? How do wallets work? Why do transaction fees exist?";
+const SMALL_TALK_REPLY =
+  "Hi, I’m the Blockwise AI tutor. I can help with Bitcoin, wallets, transactions, and beginner crypto questions. Tell me what you want help with.";
 const PRIVATE_KEY_GUARDRAIL =
   "Never share a private key, seed phrase, or recovery phrase with anyone, including this chat. If you want, I can explain what each one does and how to keep it safe.";
 const FINANCIAL_ADVICE_GUARDRAIL =
@@ -107,6 +109,12 @@ export function inferTutorTopic(message: string) {
 
 function isCryptoRelatedQuestion(message: string) {
   return /bitcoin|btc|crypto|blockchain|wallet|seed phrase|recovery phrase|private key|public key|transaction|fee|mining|miner|node|decentralized|network|satoshi|lightning|self-custody|custody|exchange|cold wallet|hot wallet|proof of work|hash rate|confirmation|block/.test(
+    message,
+  );
+}
+
+function isAllowedSmallTalk(message: string) {
+  return /^(hi|hello|hey|yo|good morning|good afternoon|good evening|how are you|what'?s your name|who are you|i need help|help me)\??$/.test(
     message,
   );
 }
@@ -135,6 +143,10 @@ function getGuardrailReply(message: string) {
     )
   ) {
     return ILLEGAL_ACTIVITY_GUARDRAIL;
+  }
+
+  if (isAllowedSmallTalk(lowered)) {
+    return SMALL_TALK_REPLY;
   }
 
   if (!isCryptoRelatedQuestion(lowered)) {

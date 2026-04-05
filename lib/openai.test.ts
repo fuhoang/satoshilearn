@@ -101,6 +101,15 @@ describe("openai helpers", () => {
     expect(responsesCreate).not.toHaveBeenCalled();
   });
 
+  it("allows lightweight small talk and redirects into crypto help", async () => {
+    const { createTutorReply } = await import("@/lib/openai");
+    const reply = await createTutorReply("Hello");
+
+    expect(reply).toContain("Hi, I’m the Blockwise AI tutor.");
+    expect(reply).toContain("Bitcoin, wallets, transactions, and beginner crypto questions.");
+    expect(responsesCreate).not.toHaveBeenCalled();
+  });
+
   it("throws when OpenAI is not configured", async () => {
     delete process.env.OPENAI_API_KEY;
 
