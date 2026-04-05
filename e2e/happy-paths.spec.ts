@@ -33,7 +33,7 @@ test.describe("happy paths", () => {
     ).toBeVisible();
     await expect(page.getByText("What is Bitcoin?")).toBeVisible();
     await expect(
-      page.getByText("Free plan · 2 of 3 tutor requests left this minute"),
+      page.getByText("Free plan · 2 of 3 guest demo questions left"),
     ).toBeVisible();
   });
 

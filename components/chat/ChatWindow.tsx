@@ -84,8 +84,11 @@ export function ChatWindow({
       <div className="mb-2 flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pr-2">
         {usage ? (
           <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs uppercase tracking-[0.16em] text-zinc-400">
-            {usage.plan === "pro" ? "Pro plan" : "Free plan"} · {usage.remaining} of{" "}
-            {usage.limit} tutor requests left this minute
+            {usage.plan === "pro"
+              ? `Pro plan · ${usage.remaining} of ${usage.limit} tutor requests left this minute`
+              : requestSource === "home"
+                ? `Free plan · ${usage.remaining} of ${usage.limit} guest demo questions left`
+                : `Free plan · ${usage.remaining} of ${usage.limit} tutor requests left this minute`}
           </div>
         ) : null}
         {messages.map((message) => (
