@@ -134,7 +134,7 @@ export function HomeHeroSection({
             }`}
           >
             <div
-              className="pointer-events-auto rounded-t-[1.5rem] rounded-b-none border-x border-t border-b-0 border-white/10 bg-transparent p-1 shadow-[0_30px_120px_rgba(0,0,0,0.45)]"
+              className="pointer-events-auto rounded-t-[1.5rem] rounded-b-none border-x border-t border-b-0 border-white/10 bg-transparent px-1 pt-0 pb-0 shadow-[0_30px_120px_rgba(0,0,0,0.45)]"
               style={{ height: `${panelHeight}px` }}
             >
               <ChatWindow
