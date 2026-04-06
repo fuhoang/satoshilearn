@@ -100,9 +100,7 @@ test.describe("happy paths", () => {
       page.getByText("Create a free account to unlock 10 tutor questions per day"),
     ).toBeVisible();
     const demoPanel = page.locator("#demo");
-    await expect(
-      demoPanel.getByRole("link", { name: "Create free account" }),
-    ).toBeVisible();
+    await expect(demoPanel.locator('a[href="/auth/register"]').first()).toBeVisible();
     await expect(demoPanel.locator('a[href="/auth/login"]').first()).toBeVisible();
   });
 
