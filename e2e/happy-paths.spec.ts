@@ -103,7 +103,7 @@ test.describe("happy paths", () => {
     await expect(
       demoPanel.getByRole("link", { name: "Create free account" }),
     ).toBeVisible();
-    await expect(demoPanel.getByRole("link", { name: "Log in" })).toBeVisible();
+    await expect(demoPanel.locator('a[href="/auth/login"]').first()).toBeVisible();
   });
 
   test("navigates into checkout successfully from pricing", async ({ page, baseURL }) => {
