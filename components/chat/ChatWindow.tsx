@@ -108,7 +108,7 @@ export function ChatWindow({
             </p>
             {usage.limit > 3 ? (
               <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
-                Resets daily
+                Resets at 00:00 UTC
               </p>
             ) : null}
           </div>

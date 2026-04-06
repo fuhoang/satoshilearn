@@ -106,7 +106,7 @@ describe("openai helpers", () => {
     const reply = await createTutorReply("Hello");
 
     expect(reply).toContain("Hi, I’m the Blockwise AI tutor.");
-    expect(reply).toContain("Bitcoin, wallets, transactions, and beginner crypto questions.");
+    expect(reply).toContain("I explain Bitcoin and crypto basics in simple language for beginners.");
     expect(responsesCreate).not.toHaveBeenCalled();
   });
 
