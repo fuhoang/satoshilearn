@@ -239,6 +239,12 @@ describe("chat route", () => {
     expect(response.status).toBe(429);
     await expect(response.json()).resolves.toEqual({
       error: "You have used the guest AI demo for now. Log in to keep chatting.",
+      usage: {
+        limit: 3,
+        plan: "free",
+        remaining: 0,
+        resetAt: expect.any(Number),
+      },
     });
   });
 
@@ -277,6 +283,12 @@ describe("chat route", () => {
     expect(response.status).toBe(429);
     await expect(response.json()).resolves.toEqual({
       error: "You have used the guest AI demo for now. Log in to keep chatting.",
+      usage: {
+        limit: 3,
+        plan: "free",
+        remaining: 0,
+        resetAt: expect.any(Number),
+      },
     });
   });
 

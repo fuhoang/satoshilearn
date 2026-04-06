@@ -226,7 +226,16 @@ export async function POST(request: Request) {
       const limitResult = getGuestUsageResult(existingGuestUsage);
 
       if (!limitResult.allowed) {
-        const response = jsonError(GUEST_LIMIT_ERROR, 429);
+        const response = NextResponse.json(
+          {
+            error: GUEST_LIMIT_ERROR,
+            usage: {
+              ...buildTutorUsage(GUEST_TUTOR_REQUEST_LIMIT, limitResult),
+              plan: "free" as const,
+            },
+          },
+          { status: 429 },
+        );
 
         if (!existingGuestId) {
           response.cookies.set(

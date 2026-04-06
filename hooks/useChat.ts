@@ -73,6 +73,10 @@ export function useChat(
         usage?: TutorUsage;
       } | null;
 
+      if (data?.usage) {
+        setUsage(data.usage);
+      }
+
       if (!response.ok || !data?.reply) {
         throw new Error(await getApiErrorMessage(response, {
           badRequestMessage: "Please enter a clear tutor question and try again.",
@@ -91,7 +95,6 @@ export function useChat(
       }
 
       const reply = data.reply;
-      setUsage(data.usage ?? null);
 
       setMessages((current) => [
         ...current,

@@ -92,14 +92,21 @@ export function ChatWindow({
     >
       <div className="mb-2 flex items-start justify-between gap-3">
         {usage ? (
-          <div className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] uppercase tracking-[0.14em] text-zinc-400">
-            {usage.plan === "pro"
-              ? `Pro account · ${usage.remaining} of ${usage.limit} tutor questions left today`
-              : requestSource === "home"
-                ? usage.limit <= 3
-                  ? `Guest demo · ${usage.remaining} of ${usage.limit} questions left`
-                  : `Free account · ${usage.remaining} of ${usage.limit} tutor questions left today`
-                : `Free account · ${usage.remaining} of ${usage.limit} tutor questions left today`}
+          <div className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-zinc-400">
+              {usage.plan === "pro"
+                ? `Pro account · ${usage.remaining} of ${usage.limit} tutor questions left today`
+                : requestSource === "home"
+                  ? usage.limit <= 3
+                    ? `Guest demo · ${usage.remaining} of ${usage.limit} questions left`
+                    : `Free account · ${usage.remaining} of ${usage.limit} tutor questions left today`
+                  : `Free account · ${usage.remaining} of ${usage.limit} tutor questions left today`}
+            </p>
+            {usage.limit > 3 ? (
+              <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
+                Resets daily
+              </p>
+            ) : null}
           </div>
         ) : <div className="flex-1" />}
         {onClose ? (
@@ -160,8 +167,8 @@ export function ChatWindow({
               Your guest demo is complete
             </p>
             <p className="mt-2 text-sm leading-7 text-orange-50/85">
-              Create an account or log in to keep chatting, save your progress, and
-              unlock the full tutor experience.
+              Create a free account to unlock 10 tutor questions per day, save your
+              progress, and keep learning with the AI tutor.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <Link
