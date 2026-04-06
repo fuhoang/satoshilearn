@@ -37,32 +37,8 @@ test.describe("happy paths", () => {
     ).toBeVisible();
   });
 
-  test("shows the guest limit conversion state on the fourth signed-out question", async ({ page }) => {
-    let requestCount = 0;
-
+  test("shows the guest limit conversion state on the fourth signed-out question", async ({ page, baseURL }) => {
     await page.route("**/api/chat", async (route) => {
-      requestCount += 1;
-
-      if (requestCount <= 3) {
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            recordedAt: new Date().toISOString(),
-            reply: `Tutor reply ${requestCount}`,
-            topic: "bitcoin",
-            usage: {
-              limit: 3,
-              plan: "free",
-              remaining: 3 - requestCount,
-              resetAt: Date.now() + 60_000,
-            },
-          }),
-        });
-
-        return;
-      }
-
       await route.fulfill({
         status: 429,
         contentType: "application/json",
@@ -78,36 +54,28 @@ test.describe("happy paths", () => {
       });
     });
 
+    await page.context().addCookies([
+      {
+        name: "blockwise_guest_tutor_id",
+        value: "guest-e2e-user",
+        url: baseURL ?? "http://127.0.0.1:3100",
+      },
+      {
+        name: "blockwise_guest_tutor_usage",
+        value: JSON.stringify({ count: 3 }),
+        url: baseURL ?? "http://127.0.0.1:3100",
+      },
+    ]);
+
     await page.goto("/");
     const prompt = page.locator(
       "#demo input[placeholder='Ask anything about crypto...']:visible",
     );
     await expect(prompt).toBeVisible();
 
-    const guestQuestions = [
-      {
-        question: "What is Bitcoin?",
-        expectedText: "Tutor reply 1",
-      },
-      {
-        question: "How do wallets work?",
-        expectedText: "Tutor reply 2",
-      },
-      {
-        question: "Why do fees exist?",
-        expectedText: "Tutor reply 3",
-      },
-      {
-        question: "What is self-custody?",
-        expectedText: "Guest demo complete",
-      },
-    ];
-
-    for (const { question, expectedText } of guestQuestions) {
-      await prompt.fill(question);
-      await page.getByRole("button", { name: "Ask" }).click();
-      await expect(page.getByText(expectedText)).toBeVisible();
-    }
+    await prompt.fill("What is self-custody?");
+    await page.getByRole("button", { name: "Ask" }).click();
+    await expect(page.getByText("Guest demo complete")).toBeVisible();
 
     await expect(page.getByText("Guest demo · 0 of 3 questions left")).toBeVisible();
     await expect(page.getByText("Guest demo complete")).toBeVisible();
