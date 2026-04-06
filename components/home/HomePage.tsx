@@ -8,12 +8,19 @@ import { HomePricingSection } from "@/components/home/HomePricingSection";
 
 type HomePageProps = {
   currentPlanSlug?: string | null;
+  isAuthenticated?: boolean;
 };
 
-export default function HomePage({ currentPlanSlug = null }: HomePageProps) {
+export default function HomePage({
+  currentPlanSlug = null,
+  isAuthenticated = false,
+}: HomePageProps) {
   return (
     <main className="min-h-screen overflow-x-hidden bg-zinc-950 text-white">
-      <HomeHeroSection />
+      <HomeHeroSection
+        currentPlanSlug={currentPlanSlug}
+        isAuthenticated={isAuthenticated}
+      />
       <HomeCurriculumSection />
       <HomeGuidesSection />
       <HomeFaqSection />

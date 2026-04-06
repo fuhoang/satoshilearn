@@ -6,6 +6,7 @@ import HomePage from "@/components/home/HomePage";
 import { getBillingSnapshotForCurrentUser, hasProAccess } from "@/lib/billing";
 import { publicGuides } from "@/lib/public-guides";
 import { absoluteUrl, createPageMetadata } from "@/lib/seo";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = createPageMetadata({
   title: "Learn crypto the structured way",
@@ -17,6 +18,11 @@ export const metadata: Metadata = createPageMetadata({
 export default async function Page() {
   noStore();
 
+  const supabase = await createServerSupabaseClient();
+  const authResult = supabase
+    ? await supabase.auth.getUser().catch(() => ({ data: { user: null } }))
+    : { data: { user: null } };
+  const isAuthenticated = Boolean(authResult.data.user);
   const billingSnapshot = await getBillingSnapshotForCurrentUser();
   const currentPlanSlug = hasProAccess(billingSnapshot)
     ? billingSnapshot.subscription?.plan_slug ?? null
@@ -107,7 +113,7 @@ export default async function Page() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      <HomePage currentPlanSlug={currentPlanSlug} />
+      <HomePage currentPlanSlug={currentPlanSlug} isAuthenticated={isAuthenticated} />
     </>
   );
 }

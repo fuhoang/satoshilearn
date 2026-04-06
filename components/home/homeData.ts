@@ -43,7 +43,7 @@ export const homePricingPlans = [
     price: "£14.99",
     cadence: "/month",
     description:
-      "Full curriculum, more AI usage, quizzes, progress tracking, and deeper security lessons.",
+      "Full curriculum, 30 AI tutor questions per day, quizzes, progress tracking, and deeper security lessons.",
     footnote: null,
     cta: "Start monthly plan",
     plan: "pro_monthly" as const,
@@ -53,7 +53,7 @@ export const homePricingPlans = [
     price: "£149.99",
     cadence: "/year",
     description:
-      "Full curriculum, more AI usage, quizzes, progress tracking, and deeper security lessons with a fixed annual price.",
+      "Full curriculum, 30 AI tutor questions per day, quizzes, progress tracking, and deeper security lessons with a fixed annual price.",
     footnote: "Save compared with the monthly plan.",
     cta: "Start yearly plan",
     plan: "pro_yearly" as const,
@@ -64,6 +64,20 @@ export const homePromptHighlights = [
   "Clear lessons",
   "Safe guidance",
   "Built for beginners",
+] as const;
+
+export const homeChatStarters = [
+  "What is Bitcoin in plain English?",
+  "How do wallets actually work?",
+  "Why do transaction fees exist?",
+] as const;
+
+export const homeHeroChatStarters = homeChatStarters.slice(0, 2);
+
+export const homeInChatStarters = [
+  "Explain Bitcoin simply",
+  "How do wallets work?",
+  "Why do fees exist?",
 ] as const;
 
 export const homePublicGuides = publicGuides;

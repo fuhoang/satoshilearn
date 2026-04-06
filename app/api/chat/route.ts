@@ -6,12 +6,15 @@ import {
   jsonError,
   parseJsonBody,
 } from "@/lib/api-route";
-import { getTutorRequestLimit, hasProAccess } from "@/lib/billing";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import {
+  getBillingSnapshotForCurrentUser,
+  getTutorRequestLimit,
+  hasProAccess,
+} from "@/lib/billing";
 import { createTutorReply, inferTutorTopic } from "@/lib/openai";
 
 const MAX_MESSAGE_LENGTH = 500;
-const CHAT_RATE_WINDOW_MS = 60_000;
 const TUTOR_PROMPT_PREVIEW_MAX = 160;
 const GUEST_TUTOR_REQUEST_LIMIT = 3;
 const GUEST_TUTOR_COOKIE = "blockwise_guest_tutor_id";
@@ -31,6 +34,12 @@ function buildTutorUsage(
     remaining: limitResult.remaining,
     resetAt: limitResult.resetAt,
   };
+}
+
+function getNextDayResetAt(now = new Date()) {
+  const resetAt = new Date(now);
+  resetAt.setUTCHours(24, 0, 0, 0);
+  return resetAt.getTime();
 }
 
 function buildRateLimitResponse(resetAt: number, error: string) {
@@ -56,6 +65,63 @@ function buildGuestCookieOptions(maxAgeSeconds: number) {
     maxAge: maxAgeSeconds,
     path: "/",
     sameSite: "lax" as const,
+  };
+}
+
+type TutorUsageCounter = {
+  count: number | null;
+};
+
+type TutorUsageSupabase = {
+  from: (table: "learning_activity") => {
+    select: (
+      columns: "id",
+      options: { count: "exact"; head: true },
+    ) => {
+      eq: (column: "user_id", value: string) => {
+        eq: (column: "activity_type", value: "tutor_prompt") => {
+          gte: (column: "created_at", value: string) => {
+            lt: (
+              column: "created_at",
+              value: string,
+            ) => Promise<TutorUsageCounter>;
+          };
+        };
+      };
+    };
+  };
+};
+
+async function getSignedInTutorUsageToday({
+  supabase,
+  userId,
+  limit,
+}: {
+  supabase: unknown;
+  userId: string;
+  limit: number;
+}) {
+  const usageSupabase = supabase as TutorUsageSupabase;
+  const now = new Date();
+  const dayStart = new Date(now);
+  dayStart.setUTCHours(0, 0, 0, 0);
+  const nextResetAt = getNextDayResetAt(now);
+
+  const result = await usageSupabase
+    .from("learning_activity")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("activity_type", "tutor_prompt")
+    .gte("created_at", dayStart.toISOString())
+    .lt("created_at", new Date(nextResetAt).toISOString());
+
+  const used = result.count ?? 0;
+
+  return {
+    allowed: used < limit,
+    remaining: Math.max(0, limit - used),
+    resetAt: nextResetAt,
+    used,
   };
 }
 
@@ -160,7 +226,16 @@ export async function POST(request: Request) {
       const limitResult = getGuestUsageResult(existingGuestUsage);
 
       if (!limitResult.allowed) {
-        const response = jsonError(GUEST_LIMIT_ERROR, 429);
+        const response = NextResponse.json(
+          {
+            error: GUEST_LIMIT_ERROR,
+            usage: {
+              ...buildTutorUsage(GUEST_TUTOR_REQUEST_LIMIT, limitResult),
+              plan: "free" as const,
+            },
+          },
+          { status: 429 },
+        );
 
         if (!existingGuestId) {
           response.cookies.set(
@@ -211,39 +286,33 @@ export async function POST(request: Request) {
       return response;
     }
 
-    let subscription = null;
+    let billingSnapshot;
 
     try {
-      const subscriptionResult = await supabaseResult.supabase
-        .from("subscriptions")
-        .select(
-          "user_id, stripe_customer_id, stripe_subscription_id, stripe_price_id, plan_slug, status, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at",
-        )
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      subscription = subscriptionResult.data ?? null;
+      billingSnapshot = await getBillingSnapshotForCurrentUser();
     } catch {
       return jsonError("Unable to load tutor access right now.", 503);
     }
 
-    const tutorRequestLimit = getTutorRequestLimit({
-      configured: true,
-      customerId: null,
-      purchaseEvents: [],
-      subscription,
-    });
+    const tutorRequestLimit = getTutorRequestLimit(billingSnapshot);
 
-    const limitResult = checkRateLimit(
-      `chat:${user.id}`,
-      tutorRequestLimit,
-      CHAT_RATE_WINDOW_MS,
-    );
+    const activityClient = createSupabaseAdminClient() ?? supabaseResult.supabase;
+    let limitResult;
+
+    try {
+      limitResult = await getSignedInTutorUsageToday({
+        limit: tutorRequestLimit,
+        supabase: activityClient,
+        userId: user.id,
+      });
+    } catch {
+      return jsonError("Unable to load tutor usage right now.", 503);
+    }
 
     if (!limitResult.allowed) {
       return buildRateLimitResponse(
         limitResult.resetAt,
-        "You have reached the tutor limit for now. Please try again in a minute.",
+        "You have reached your tutor limit for today. Please come back tomorrow.",
       );
     }
 
@@ -259,30 +328,34 @@ export async function POST(request: Request) {
     const responsePreview = reply.slice(0, TUTOR_PROMPT_PREVIEW_MAX);
     const recordedAt = new Date().toISOString();
 
-    void supabaseResult.supabase.from("learning_activity").insert({
-      activity_context: topic,
-      activity_type: "tutor_prompt",
-      created_at: recordedAt,
-      lesson_slug: "ai-tutor",
-      lesson_title: message,
-      response_preview: responsePreview,
-      user_id: user.id,
-    });
+    try {
+      const insertResult = await activityClient.from("learning_activity").insert({
+        activity_context: topic,
+        activity_type: "tutor_prompt",
+        created_at: recordedAt,
+        lesson_slug: "ai-tutor",
+        lesson_title: message,
+        response_preview: responsePreview,
+        user_id: user.id,
+      });
+
+      if (insertResult?.error) {
+        return jsonError("Unable to save tutor activity right now.", 503);
+      }
+    } catch {
+      return jsonError("Unable to save tutor activity right now.", 503);
+    }
 
     return NextResponse.json({
       reply,
       recordedAt,
       topic,
       usage: {
-        ...buildTutorUsage(tutorRequestLimit, limitResult),
-        plan: hasProAccess({
-          configured: true,
-          customerId: null,
-          purchaseEvents: [],
-          subscription,
-        })
-          ? "pro"
-          : "free",
+        ...buildTutorUsage(tutorRequestLimit, {
+          remaining: Math.max(0, limitResult.remaining - 1),
+          resetAt: limitResult.resetAt,
+        }),
+        plan: hasProAccess(billingSnapshot) ? "pro" : "free",
       },
     });
   } catch {
