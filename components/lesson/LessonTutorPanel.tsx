@@ -100,7 +100,7 @@ export function LessonTutorPanel({
           {usage ? (
             <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs uppercase tracking-[0.16em] text-zinc-400">
               {usage.plan === "pro" ? "Pro plan" : "Free plan"} · {usage.remaining} of{" "}
-              {usage.limit} tutor requests left this minute
+              {usage.limit} tutor requests left today
             </div>
           ) : null}
         </div>

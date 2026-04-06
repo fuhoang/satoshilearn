@@ -5,10 +5,10 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
   return (
     <div
       className={cn(
-        "max-w-[85%] rounded-3xl px-4 py-3 text-left text-sm leading-7",
+        "rounded-3xl px-4 py-3 text-left text-sm",
         message.role === "assistant"
-          ? "bg-transparent text-zinc-300"
-          : "ml-auto border border-white/15 bg-transparent text-zinc-300",
+          ? "max-w-[72%] bg-transparent pr-8 text-zinc-200 leading-7"
+          : "ml-auto mt-2 max-w-[80%] border border-white/15 bg-transparent text-zinc-300 leading-6",
       )}
     >
       {message.content}

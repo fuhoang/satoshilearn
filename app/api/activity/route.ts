@@ -519,6 +519,10 @@ async function writeSupabaseHistory(body: ActivityInsertBody): Promise<ActivityW
     };
   }
 
+  if (activity.type === "tutor_prompt") {
+    return getPersistedHistoryResponse();
+  }
+
   if (activity.type === "lesson_completion") {
     let existingCompletion: { id: string } | null = null;
     let existingError: { message?: string } | null = null;

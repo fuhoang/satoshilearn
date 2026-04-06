@@ -22,6 +22,7 @@ const plans = [
     features: [
       "Live Bitcoin track access",
       "Quiz progress and dashboard history",
+      "10 AI tutor questions per day",
       "Account profile and recovery tools",
     ],
   },
@@ -30,14 +31,14 @@ const plans = [
     price: "£14.99",
     cadence: "per month",
     description:
-      "Unlock premium billing access, future premium tracks, stronger tutor usage, and a flexible monthly subscription.",
+      "Unlock premium billing access, future premium tracks, and a more generous daily tutor allowance with a flexible monthly subscription.",
     accent: "border-orange-500/30 bg-orange-500/10",
     badge: "Most flexible",
     ctaLabel: "Upgrade to Pro",
     plan: "pro_monthly" as const,
     features: [
       "Everything in Starter",
-      "Expanded tutor access",
+      "30 AI tutor questions per day",
       "Billing portal and purchase history",
     ],
   },
@@ -53,6 +54,7 @@ const plans = [
     plan: "pro_yearly" as const,
     features: [
       "Everything in Pro Monthly",
+      "30 AI tutor questions per day",
       "Lower annual cost than paying monthly",
       "Annual billing with full portal access",
     ],
@@ -189,6 +191,19 @@ export default async function PricingPage() {
                 Pro adds account-level billing tools and the next layer of product
                 depth as premium tracks roll out.
               </p>
+              <div className="mt-6 rounded-[1.5rem] border border-white/10 bg-black/25 p-5">
+                <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
+                  Tutor access
+                </p>
+                <p className="mt-3 text-lg font-semibold text-white">
+                  Start with 3 guest questions, then grow into daily access
+                </p>
+                <p className="mt-3 text-sm leading-7 text-zinc-400">
+                  Guests can try 3 demo questions before login. Free accounts get
+                  10 tutor questions per day, and Pro plans increase that to 30
+                  questions per day.
+                </p>
+              </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-[1.5rem] border border-white/10 bg-black/25 p-5">

@@ -34,15 +34,18 @@ vi.mock("next/dynamic", () => ({
   default:
     () =>
     ({
+      starterPrompts,
       submittedPrompt,
       submittedPromptVersion,
     }: {
+      starterPrompts?: readonly string[];
       submittedPrompt?: string;
       submittedPromptVersion?: number;
     }) => (
       <div
         data-prompt={submittedPrompt ?? ""}
         data-prompt-version={submittedPromptVersion ?? 0}
+        data-starters={(starterPrompts ?? []).join("|")}
         data-testid="chat-window"
       >
         <span>{submittedPrompt}</span>
@@ -53,15 +56,18 @@ vi.mock("next/dynamic", () => ({
 
 vi.mock("@/components/chat/ChatWindow", () => ({
   ChatWindow: ({
+    starterPrompts,
     submittedPrompt,
     submittedPromptVersion,
   }: {
+    starterPrompts?: readonly string[];
     submittedPrompt?: string;
     submittedPromptVersion?: number;
   }) => (
     <div
       data-prompt={submittedPrompt ?? ""}
       data-prompt-version={submittedPromptVersion ?? 0}
+      data-starters={(starterPrompts ?? []).join("|")}
       data-testid="chat-window"
     >
       <span>{submittedPrompt}</span>
@@ -83,6 +89,11 @@ describe("HomePage", () => {
     expect(screen.getByText("Clear lessons")).toBeInTheDocument();
     expect(screen.getByText("Safe guidance")).toBeInTheDocument();
     expect(screen.getByText("Built for beginners")).toBeInTheDocument();
+    expect(screen.getByText("What is Bitcoin in plain English?")).toBeInTheDocument();
+    expect(screen.getByText("How do wallets actually work?")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Why do transaction fees exist?" }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps the conversation idle when the prompt is empty", () => {
@@ -105,8 +116,10 @@ describe("HomePage", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Ask" }));
 
-    expect(screen.getByTestId("chat-window")).toBeInTheDocument();
-    expect(screen.getByText("Explain Bitcoin simply")).toBeInTheDocument();
+    expect(screen.getByTestId("chat-window")).toHaveAttribute(
+      "data-prompt",
+      "Explain Bitcoin simply",
+    );
   });
 
   it("opens the conversation when pressing Enter in the prompt", () => {
@@ -119,8 +132,21 @@ describe("HomePage", () => {
       key: "Enter",
     });
 
-    expect(screen.getByTestId("chat-window")).toBeInTheDocument();
-    expect(screen.getByText("What gives Bitcoin value?")).toBeInTheDocument();
+    expect(screen.getByTestId("chat-window")).toHaveAttribute(
+      "data-prompt",
+      "What gives Bitcoin value?",
+    );
+  });
+
+  it("opens the conversation from a starter prompt chip", () => {
+    render(<HomePage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "How do wallets actually work?" }));
+
+    expect(screen.getByTestId("chat-window")).toHaveAttribute(
+      "data-prompt",
+      "How do wallets actually work?",
+    );
   });
 
   it("renders the curriculum modules and pricing plans", () => {
@@ -150,7 +176,7 @@ describe("HomePage", () => {
   });
 
   it("disables the monthly CTA when the user is already on Pro monthly", () => {
-    render(<HomePage currentPlanSlug="pro_monthly" />);
+    render(<HomePage currentPlanSlug="pro_monthly" isAuthenticated />);
 
     expect(screen.getByText("Current subscription")).toBeInTheDocument();
     expect(
@@ -159,11 +185,17 @@ describe("HomePage", () => {
   });
 
   it("shows a downgrade CTA for monthly when the user is on Pro yearly", () => {
-    render(<HomePage currentPlanSlug="pro_yearly" />);
+    render(<HomePage currentPlanSlug="pro_yearly" isAuthenticated />);
 
     expect(
       screen.getByRole("button", { name: "Downgrade to monthly" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Current subscription")).toBeInTheDocument();
+  });
+
+  it("shows the free account tutor label for authenticated users without Pro", () => {
+    render(<HomePage isAuthenticated />);
+
+    expect(screen.getByRole("button", { name: "Ask" })).toBeInTheDocument();
   });
 });

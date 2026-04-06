@@ -14,6 +14,7 @@ type TutorUsage = {
 };
 
 type UseChatOptions = {
+  initialUsage?: TutorUsage | null;
   source?: "home" | "lesson";
 };
 
@@ -31,7 +32,7 @@ export function useChat(
   const [messages, setMessages] = useState<ChatMessage[]>([...initialMessages]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [usage, setUsage] = useState<TutorUsage | null>(null);
+  const [usage, setUsage] = useState<TutorUsage | null>(options.initialUsage ?? null);
   const { recordTutorPrompt } = useLearningHistory();
 
   const sendMessage = useCallback(async (content: string) => {
@@ -72,6 +73,10 @@ export function useChat(
         usage?: TutorUsage;
       } | null;
 
+      if (data?.usage) {
+        setUsage(data.usage);
+      }
+
       if (!response.ok || !data?.reply) {
         throw new Error(await getApiErrorMessage(response, {
           badRequestMessage: "Please enter a clear tutor question and try again.",
@@ -90,7 +95,6 @@ export function useChat(
       }
 
       const reply = data.reply;
-      setUsage(data.usage ?? null);
 
       setMessages((current) => [
         ...current,

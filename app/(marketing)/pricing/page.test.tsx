@@ -101,5 +101,12 @@ describe("pricing page", () => {
 
     expect(screen.getByRole("button", { name: "Upgrade to Pro" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Choose yearly" })).toBeInTheDocument();
+    expect(screen.getByText("10 AI tutor questions per day")).toBeInTheDocument();
+    expect(screen.getAllByText("30 AI tutor questions per day")).toHaveLength(2);
+    expect(
+      screen.getByText(
+        "Guests can try 3 demo questions before login. Free accounts get 10 tutor questions per day, and Pro plans increase that to 30 questions per day.",
+      ),
+    ).toBeInTheDocument();
   });
 });
