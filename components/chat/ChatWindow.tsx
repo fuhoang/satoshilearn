@@ -113,7 +113,7 @@ export function ChatWindow({
           </button>
         ) : null}
       </div>
-      <div className="mb-2 flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pr-2">
+      <div className="mb-2 flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pr-2">
         {isHomeChat && !hasUserMessages ? (
           <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-5 text-left">
             <p className="text-sm font-semibold text-white">

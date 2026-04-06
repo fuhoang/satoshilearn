@@ -80,9 +80,9 @@ export function HomeHeroSection({
     function syncPanelHeight() {
       const demoRect = demoNode.getBoundingClientRect();
       const headerRect = headerNode.getBoundingClientRect();
-      const availableHeight = demoRect.top - headerRect.bottom - 12;
+      const availableHeight = demoRect.top - headerRect.bottom;
 
-      setPanelHeight(Math.max(240, Math.round(availableHeight - 4)));
+      setPanelHeight(Math.max(260, Math.round(availableHeight)));
     }
 
     syncPanelHeight();
