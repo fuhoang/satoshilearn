@@ -86,9 +86,6 @@ describe("HomePage", () => {
     expect(
       screen.getByText("Simple lessons. Clear explanations. Step by step."),
     ).toBeInTheDocument();
-    expect(screen.getByText("Clear lessons")).toBeInTheDocument();
-    expect(screen.getByText("Safe guidance")).toBeInTheDocument();
-    expect(screen.getByText("Built for beginners")).toBeInTheDocument();
     expect(screen.getByText("What is Bitcoin in plain English?")).toBeInTheDocument();
     expect(screen.getByText("How do wallets actually work?")).toBeInTheDocument();
     expect(
@@ -173,6 +170,7 @@ describe("HomePage", () => {
     expect(screen.getAllByText("Read guide")).toHaveLength(6);
     expect(screen.getByText("Monthly plan")).toBeInTheDocument();
     expect(screen.getByText("Yearly plan")).toBeInTheDocument();
+    expect(screen.getByText("Learn crypto with a clearer path.")).toBeInTheDocument();
   });
 
   it("disables the monthly CTA when the user is already on Pro monthly", () => {

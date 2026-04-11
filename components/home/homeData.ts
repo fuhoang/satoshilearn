@@ -60,12 +60,6 @@ export const homePricingPlans = [
   },
 ] as const;
 
-export const homePromptHighlights = [
-  "Clear lessons",
-  "Safe guidance",
-  "Built for beginners",
-] as const;
-
 export const homeChatStarters = [
   "What is Bitcoin in plain English?",
   "How do wallets actually work?",

@@ -14,7 +14,7 @@ export function HomePricingSection({
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-sm text-zinc-500">Why it matters</p>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            Built for beginners who want clarity and safe guidance.
+            Learn crypto with a clearer path.
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-8 text-zinc-400">
             Most people do not need more noise. They need a trusted place to
