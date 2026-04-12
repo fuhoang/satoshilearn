@@ -1,4 +1,16 @@
 import { expect, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
+
+async function getHomeChatPrompt(page: Page) {
+  const mobileLauncher = page.getByRole("button", { name: "Open home chat" });
+
+  if (await mobileLauncher.isVisible().catch(() => false)) {
+    await mobileLauncher.click();
+    return page.locator("#home-mobile-chat input[placeholder='Ask anything about crypto...']");
+  }
+
+  return page.locator("#demo input[placeholder='Ask anything about crypto...']:visible");
+}
 
 test.describe("happy paths", () => {
   test("opens the guest home chat demo and renders the tutor reply", async ({ page }) => {
@@ -21,9 +33,7 @@ test.describe("happy paths", () => {
     });
 
     await page.goto("/");
-    const prompt = page.locator(
-      "#demo input[placeholder='Ask anything about crypto...']:visible",
-    );
+    const prompt = await getHomeChatPrompt(page);
     await expect(prompt).toBeVisible();
     await prompt.fill("What is Bitcoin?");
     await page.getByRole("button", { name: "Ask" }).click();
@@ -68,9 +78,7 @@ test.describe("happy paths", () => {
     ]);
 
     await page.goto("/");
-    const prompt = page.locator(
-      "#demo input[placeholder='Ask anything about crypto...']:visible",
-    );
+    const prompt = await getHomeChatPrompt(page);
     await expect(prompt).toBeVisible();
 
     await prompt.fill("What is self-custody?");
@@ -82,9 +90,9 @@ test.describe("happy paths", () => {
     await expect(
       page.getByText("Create a free account to unlock 10 tutor questions per day"),
     ).toBeVisible();
-    const demoPanel = page.locator("#demo");
-    await expect(demoPanel.locator('a[href="/auth/register"]').first()).toBeVisible();
-    await expect(demoPanel.locator('a[href="/auth/login"]').first()).toBeVisible();
+    const activeChatRoot = page.locator("#home-mobile-chat, #demo");
+    await expect(activeChatRoot.locator('a[href="/auth/register"]').first()).toBeVisible();
+    await expect(activeChatRoot.locator('a[href="/auth/login"]').first()).toBeVisible();
   });
 
   test("navigates into checkout successfully from pricing", async ({ page, baseURL }) => {

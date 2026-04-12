@@ -19,6 +19,7 @@ export function HomeHeroSection({
   const [submittedPrompt, setSubmittedPrompt] = useState("");
   const [promptVersion, setPromptVersion] = useState(0);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [panelHeight, setPanelHeight] = useState(560);
   const demoRef = useRef<HTMLDivElement | null>(null);
   const initialUsage = currentPlanSlug
@@ -54,6 +55,22 @@ export function HomeHeroSection({
     setIsChatOpen(true);
     setPrompt("");
   }
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const syncViewport = () => setIsMobileViewport(mediaQuery.matches);
+
+    syncViewport();
+    mediaQuery.addEventListener("change", syncViewport);
+
+    return () => {
+      mediaQuery.removeEventListener("change", syncViewport);
+    };
+  }, []);
 
   useEffect(() => {
     const demoElement = demoRef.current;
@@ -110,37 +127,41 @@ export function HomeHeroSection({
         <div
           id="demo"
           ref={demoRef}
-          className="relative z-10 mt-20 hidden w-full max-w-4xl flex-col items-center md:mt-56 md:flex"
+          className="relative z-10 mt-20 w-full max-w-4xl md:mt-56"
         >
-          <HomeDesktopChat
-            chatStarterPrompts={homeInChatStarters}
-            composerStarterPrompts={homeHeroChatStarters}
-            initialUsage={initialUsage}
-            isChatOpen={isChatOpen}
-            onClose={() => setIsChatOpen(false)}
-            onPromptChange={setPrompt}
-            onSubmit={openConversation}
-            panelHeight={panelHeight}
-            prompt={prompt}
-            submittedPrompt={submittedPrompt}
-            submittedPromptVersion={promptVersion}
-          />
+          {!isMobileViewport ? (
+            <HomeDesktopChat
+              chatStarterPrompts={homeInChatStarters}
+              composerStarterPrompts={homeHeroChatStarters}
+              initialUsage={initialUsage}
+              isChatOpen={isChatOpen}
+              onClose={() => setIsChatOpen(false)}
+              onPromptChange={setPrompt}
+              onSubmit={openConversation}
+              panelHeight={panelHeight}
+              prompt={prompt}
+              submittedPrompt={submittedPrompt}
+              submittedPromptVersion={promptVersion}
+            />
+          ) : null}
         </div>
       </div>
 
-      <HomeMobileChat
-        chatStarterPrompts={homeInChatStarters}
-        composerStarterPrompts={homeHeroChatStarters}
-        initialUsage={initialUsage}
-        isChatOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-        onPromptChange={setPrompt}
-        onSubmit={openConversation}
-        onToggle={() => setIsChatOpen((current) => !current)}
-        prompt={prompt}
-        submittedPrompt={submittedPrompt}
-        submittedPromptVersion={promptVersion}
-      />
+      {isMobileViewport ? (
+        <HomeMobileChat
+          chatStarterPrompts={homeInChatStarters}
+          composerStarterPrompts={homeHeroChatStarters}
+          initialUsage={initialUsage}
+          isChatOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          onPromptChange={setPrompt}
+          onSubmit={openConversation}
+          onToggle={() => setIsChatOpen((current) => !current)}
+          prompt={prompt}
+          submittedPrompt={submittedPrompt}
+          submittedPromptVersion={promptVersion}
+        />
+      ) : null}
     </section>
   );
 }
