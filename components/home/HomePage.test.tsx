@@ -98,11 +98,7 @@ describe("HomePage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Ask" }));
 
-    expect(screen.getByTestId("chat-window")).toHaveAttribute("data-prompt", "");
-    expect(screen.getByTestId("chat-window")).toHaveAttribute(
-      "data-prompt-version",
-      "0",
-    );
+    expect(screen.queryByTestId("chat-window")).not.toBeInTheDocument();
   });
 
   it("opens the conversation with the submitted prompt when clicking Ask", () => {
@@ -113,10 +109,9 @@ describe("HomePage", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Ask" }));
 
-    expect(screen.getByTestId("chat-window")).toHaveAttribute(
-      "data-prompt",
-      "Explain Bitcoin simply",
-    );
+    screen.getAllByTestId("chat-window").forEach((chatWindow) => {
+      expect(chatWindow).toHaveAttribute("data-prompt", "Explain Bitcoin simply");
+    });
   });
 
   it("opens the conversation when pressing Enter in the prompt", () => {
@@ -129,10 +124,9 @@ describe("HomePage", () => {
       key: "Enter",
     });
 
-    expect(screen.getByTestId("chat-window")).toHaveAttribute(
-      "data-prompt",
-      "What gives Bitcoin value?",
-    );
+    screen.getAllByTestId("chat-window").forEach((chatWindow) => {
+      expect(chatWindow).toHaveAttribute("data-prompt", "What gives Bitcoin value?");
+    });
   });
 
   it("opens the conversation from a starter prompt chip", () => {
@@ -140,10 +134,9 @@ describe("HomePage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "How do wallets actually work?" }));
 
-    expect(screen.getByTestId("chat-window")).toHaveAttribute(
-      "data-prompt",
-      "How do wallets actually work?",
-    );
+    screen.getAllByTestId("chat-window").forEach((chatWindow) => {
+      expect(chatWindow).toHaveAttribute("data-prompt", "How do wallets actually work?");
+    });
   });
 
   it("renders the curriculum modules and pricing plans", () => {

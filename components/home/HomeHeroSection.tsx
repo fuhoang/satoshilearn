@@ -1,15 +1,11 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 
+import { HomeDesktopChat } from "@/components/home/HomeDesktopChat";
+import { HomeMobileChat } from "@/components/home/HomeMobileChat";
 import { SoftAurora } from "@/components/home/SoftAurora";
 import { homeHeroChatStarters, homeInChatStarters } from "@/components/home/homeData";
-
-const ChatWindow = dynamic(
-  () => import("@/components/chat/ChatWindow").then((module) => module.ChatWindow),
-  { ssr: false },
-);
 
 export function HomeHeroSection({
   currentPlanSlug = null,
@@ -23,6 +19,7 @@ export function HomeHeroSection({
   const [submittedPrompt, setSubmittedPrompt] = useState("");
   const [promptVersion, setPromptVersion] = useState(0);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [panelHeight, setPanelHeight] = useState(560);
   const demoRef = useRef<HTMLDivElement | null>(null);
   const initialUsage = currentPlanSlug
@@ -58,6 +55,22 @@ export function HomeHeroSection({
     setIsChatOpen(true);
     setPrompt("");
   }
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const syncViewport = () => setIsMobileViewport(mediaQuery.matches);
+
+    syncViewport();
+    mediaQuery.addEventListener("change", syncViewport);
+
+    return () => {
+      mediaQuery.removeEventListener("change", syncViewport);
+    };
+  }, []);
 
   useEffect(() => {
     const demoElement = demoRef.current;
@@ -114,69 +127,41 @@ export function HomeHeroSection({
         <div
           id="demo"
           ref={demoRef}
-          className="relative z-10 mt-56 flex w-full max-w-4xl flex-col items-center"
+          className="relative z-10 mt-20 w-full max-w-4xl md:mt-56"
         >
-          <div
-            aria-hidden={!isChatOpen}
-            className={`pointer-events-none absolute inset-x-0 bottom-full z-20 mb-0 transition-all duration-300 ease-out ${
-              isChatOpen ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
-            }`}
-          >
-            <div
-              className="pointer-events-auto rounded-t-[1.5rem] rounded-b-none border-x border-t border-b-0 border-white/10 bg-transparent px-1 pt-0 pb-0 shadow-[0_30px_120px_rgba(0,0,0,0.45)]"
-              style={{ height: `${panelHeight}px` }}
-            >
-              <ChatWindow
-                className="flex h-full flex-col overflow-hidden border border-white/10 bg-black"
-                initialUsage={initialUsage}
-                requestSource="home"
-                starterPrompts={homeInChatStarters}
-                submittedPrompt={submittedPrompt}
-                submittedPromptVersion={promptVersion}
-                onClose={() => setIsChatOpen(false)}
-              />
-            </div>
-          </div>
-
-          <div className="w-full rounded-3xl border border-white/10 bg-zinc-900/80 p-5 backdrop-blur">
-            <div className="rounded-[1.75rem] border border-white/10 bg-black/40 p-3 shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
-              <input
-                className="w-full bg-transparent px-2 py-2 text-sm text-white outline-none placeholder:text-zinc-500"
-                placeholder="Ask anything about crypto..."
-                value={prompt}
-                onChange={(event) => setPrompt(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    openConversation();
-                  }
-                }}
-              />
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-2 pt-3">
-                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                  {homeHeroChatStarters.map((starter) => (
-                    <button
-                      key={starter}
-                      className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-medium text-zinc-300 transition hover:border-orange-400/30 hover:bg-orange-500/10 hover:text-orange-100"
-                      type="button"
-                      onClick={() => openConversation(starter)}
-                    >
-                      {starter}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  className="shrink-0 rounded-full bg-orange-500 px-3 py-1.5 text-xs font-semibold text-black transition hover:bg-orange-400"
-                  type="button"
-                  onClick={() => openConversation()}
-                >
-                  Ask
-                </button>
-              </div>
-            </div>
-          </div>
+          {!isMobileViewport ? (
+            <HomeDesktopChat
+              chatStarterPrompts={homeInChatStarters}
+              composerStarterPrompts={homeHeroChatStarters}
+              initialUsage={initialUsage}
+              isChatOpen={isChatOpen}
+              onClose={() => setIsChatOpen(false)}
+              onPromptChange={setPrompt}
+              onSubmit={openConversation}
+              panelHeight={panelHeight}
+              prompt={prompt}
+              submittedPrompt={submittedPrompt}
+              submittedPromptVersion={promptVersion}
+            />
+          ) : null}
         </div>
       </div>
+
+      {isMobileViewport ? (
+        <HomeMobileChat
+          chatStarterPrompts={homeInChatStarters}
+          composerStarterPrompts={homeHeroChatStarters}
+          initialUsage={initialUsage}
+          isChatOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          onPromptChange={setPrompt}
+          onSubmit={openConversation}
+          onToggle={() => setIsChatOpen((current) => !current)}
+          prompt={prompt}
+          submittedPrompt={submittedPrompt}
+          submittedPromptVersion={promptVersion}
+        />
+      ) : null}
     </section>
   );
 }
